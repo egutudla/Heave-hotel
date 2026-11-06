@@ -1,0 +1,6 @@
+{
+  "name": "HavenStay Hotels",
+  "description": "HavenStay Hotels - Your Comfort, Our Priority. Luxury hotel booking with thoughtfully designed rooms, transparent pricing, and seamless reservations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
