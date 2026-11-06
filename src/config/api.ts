@@ -7,7 +7,7 @@ import { Room, BookingFormData, BookingResult } from '../types';
  */
 export const API_URL =
   (import.meta.env.VITE_API_URL as string) ||
-  'https://script.google.com/macros/s/AKfycbzLmif36bXfW1YuhCOxgd9ZX_izgcNN0PBk8E3AuCHyEqbY2YhtVSeJrYe-xGslB8w0/exec';
+  'https://script.google.com/macros/s/AKfycbzqG6y5pbnm59u-7j0FGZX35rezq_nhmxEECXVAhYLNxNEILaar_VZfJgdUX-YN5SDa/exec';
 
 export const APPS_SCRIPT_URL = API_URL;
 
