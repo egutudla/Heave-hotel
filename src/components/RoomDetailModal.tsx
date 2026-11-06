@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Room } from '../types';
 import { Button } from './Button';
+import { formatNaira } from '../utils/currency';
 
 interface RoomDetailModalProps {
   room: Room | null;
@@ -190,7 +191,7 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({
                   Nightly Rate
                 </span>
                 <span className="text-base font-serif font-bold text-[#142D26]">
-                  ${room.PricePerNight} <span className="text-xs font-normal text-[#575757]">/ night</span>
+                  {formatNaira(room.PricePerNight)} <span className="text-xs font-normal text-[#575757]">/ night</span>
                 </span>
               </div>
             </div>
@@ -252,7 +253,7 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({
                   className="text-xl sm:text-2xl font-serif font-bold text-[#142D26]"
                   style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
                 >
-                  ${room.PricePerNight}
+                  {formatNaira(room.PricePerNight)}
                 </span>
                 <span className="text-xs text-[#575757]">/ night</span>
               </div>

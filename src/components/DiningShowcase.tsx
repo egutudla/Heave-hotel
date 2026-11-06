@@ -80,47 +80,82 @@ interface DiningShowcaseProps {
 
 export const DiningShowcase: React.FC<DiningShowcaseProps> = ({ onReserveDining }) => {
   const [activeTab, setActiveTab] = useState<string>('restaurant');
-  const [isVideoPlaying, setIsVideoPlaying] = useState(true);
 
   const venue = DINING_VENUES.find((v) => v.id === activeTab) || DINING_VENUES[0];
+  const currentIndex = DINING_VENUES.findIndex((v) => v.id === activeTab);
+
+  const handleNextVenue = () => {
+    const nextIdx = (currentIndex + 1) % DINING_VENUES.length;
+    setActiveTab(DINING_VENUES[nextIdx].id);
+  };
+
+  const handlePrevVenue = () => {
+    const prevIdx = (currentIndex - 1 + DINING_VENUES.length) % DINING_VENUES.length;
+    setActiveTab(DINING_VENUES[prevIdx].id);
+  };
 
   return (
-    <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      {/* Category Tabs inspired by The Palms Classic Hotel */}
+    <section className="py-12 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      {/* Category Tabs: mobile horizontal scroll with snap-x, desktop centered */}
       <ScrollReveal yOffset={25}>
-        <div className="flex items-center justify-center gap-2 sm:gap-3 mb-12 sm:mb-16 overflow-x-auto pb-2 scrollbar-none">
-          {DINING_VENUES.map((item) => {
-            const isActive = item.id === activeTab;
-            return (
+        <div className="mb-8 sm:mb-14">
+          <div className="flex items-center justify-start sm:justify-center gap-2 sm:gap-3 overflow-x-auto pb-2 scrollbar-none snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+            {DINING_VENUES.map((item) => {
+              const isActive = item.id === activeTab;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`shrink-0 snap-center px-4 sm:px-6 py-2.5 rounded-full text-xs sm:text-sm font-medium tracking-wide transition-all cursor-pointer whitespace-nowrap min-h-[44px] flex items-center ${
+                    isActive
+                      ? 'bg-[#142D26] text-white shadow-md ring-2 ring-[#D5AD72]/40'
+                      : 'bg-white text-[#242424] hover:bg-[#142D26]/5 border border-[#D5AD72]/30'
+                  }`}
+                >
+                  <span>{item.tabLabel}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Mobile pagination & quick switcher helper */}
+          <div className="flex sm:hidden items-center justify-between text-xs text-[#575757] pt-2 px-1">
+            <span className="font-medium text-[#142D26]">
+              {currentIndex + 1} of {DINING_VENUES.length} · {venue.tabLabel}
+            </span>
+            <div className="flex items-center gap-2">
               <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`px-5 sm:px-7 py-2.5 rounded-full text-xs sm:text-sm font-medium tracking-wide transition-all cursor-pointer whitespace-nowrap ${
-                  isActive
-                    ? 'bg-[#142D26] text-white shadow-md'
-                    : 'bg-white text-[#242424] hover:bg-[#142D26]/5 border border-[#D5AD72]/30'
-                }`}
+                onClick={handlePrevVenue}
+                className="px-2 py-1 rounded bg-white border border-[#D5AD72]/40 text-[#142D26] active:bg-[#ECE8DE]"
+                aria-label="Previous venue"
               >
-                <span>{item.tabLabel}</span>
+                ← Prev
               </button>
-            );
-          })}
+              <button
+                onClick={handleNextVenue}
+                className="px-2 py-1 rounded bg-[#142D26] text-white active:bg-black"
+                aria-label="Next venue"
+              >
+                Next →
+              </button>
+            </div>
+          </div>
         </div>
       </ScrollReveal>
 
       {/* Main 2-Column Showcase Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
-        {/* Left Card: Rounded Card with Video / Image matching reference screenshot */}
-        <div className="lg:col-span-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center">
+        {/* Left Column: Rounded Media Card */}
+        <div className="lg:col-span-6 w-full">
           <ScrollReveal yOffset={35}>
-            <div className="relative rounded-[28px] sm:rounded-[36px] overflow-hidden bg-[#ECE8DE] shadow-[0_20px_50px_rgba(20,45,38,0.12)] border border-[#D5AD72]/30 aspect-[4/3] group">
+            <div className="relative rounded-2xl sm:rounded-[36px] overflow-hidden bg-[#ECE8DE] shadow-[0_16px_40px_rgba(20,45,38,0.12)] border border-[#D5AD72]/30 aspect-[4/3] sm:aspect-[4/3] group">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={venue.id}
                   initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.98 }}
-                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
                   className="w-full h-full relative"
                 >
                   {/* HTML5 Loop Video */}
@@ -144,12 +179,12 @@ export const DiningShowcase: React.FC<DiningShowcaseProps> = ({ onReserveDining 
                   )}
 
                   {/* Gentle gradient overlay for cinematic depth */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
 
-                  {/* Badge in Bottom Left */}
-                  <div className="absolute bottom-5 left-5 bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-semibold text-[#142D26] shadow-sm flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-[#D5AD72]" />
-                    <span>{venue.signatureDish}</span>
+                  {/* Responsive Badge in Bottom Left - formatted to never overflow mobile screens */}
+                  <div className="absolute bottom-3 left-3 right-3 sm:right-auto sm:bottom-5 sm:left-5 bg-white/95 backdrop-blur-md px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-lg sm:rounded-full text-[11px] sm:text-xs font-semibold text-[#142D26] shadow-sm flex items-center gap-1.5 max-w-[calc(100%-24px)]">
+                    <Sparkles className="w-3.5 h-3.5 text-[#D5AD72] shrink-0" />
+                    <span className="truncate">{venue.signatureDish}</span>
                   </div>
                 </motion.div>
               </AnimatePresence>
@@ -157,20 +192,20 @@ export const DiningShowcase: React.FC<DiningShowcaseProps> = ({ onReserveDining 
           </ScrollReveal>
         </div>
 
-        {/* Right Column: Editorial Typography matching reference screenshot */}
-        <div className="lg:col-span-6 space-y-6">
+        {/* Right Column: Editorial Content */}
+        <div className="lg:col-span-6 space-y-4 sm:space-y-6">
           <ScrollReveal yOffset={35} delay={0.15}>
-            {/* Kicker with dash: — THE RESTAURANT */}
+            {/* Kicker */}
             <div className="flex items-center gap-2.5">
               <span className="h-[1px] w-6 bg-[#D5AD72]" />
-              <span className="text-xs uppercase tracking-[0.22em] font-semibold text-[#B88E52]">
+              <span className="text-[11px] sm:text-xs uppercase tracking-[0.22em] font-semibold text-[#B88E52]">
                 {venue.kicker}
               </span>
             </div>
 
-            {/* Headline: Where flavour meets ambience */}
+            {/* Headline with fluid mobile sizing */}
             <h2
-              className="text-3xl sm:text-5xl lg:text-6xl font-serif text-[#142D26] tracking-tight leading-[1.12]"
+              className="text-2xl sm:text-4xl lg:text-5xl font-serif text-[#142D26] tracking-tight leading-[1.2] sm:leading-[1.15]"
               style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
             >
               {venue.headlineMain}{' '}
@@ -179,56 +214,53 @@ export const DiningShowcase: React.FC<DiningShowcaseProps> = ({ onReserveDining 
                 style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
               >
                 {venue.headlineItalic}
-              </span>
+              </span>{' '}
               {venue.headlineSecondLine && (
-                <>
-                  <br />
-                  <span
-                    className="italic font-serif text-[#B88E52] font-normal"
-                    style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-                  >
-                    {venue.headlineSecondLine}
-                  </span>
-                </>
+                <span
+                  className="italic font-serif text-[#B88E52] font-normal"
+                  style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+                >
+                  {venue.headlineSecondLine}
+                </span>
               )}
             </h2>
 
             {/* Paragraph 1 */}
-            <p className="text-sm sm:text-base text-[#242424]/80 leading-relaxed font-normal pt-2">
+            <p className="text-xs sm:text-sm md:text-base text-[#242424]/80 leading-relaxed font-normal pt-1">
               {venue.bodyPara1}
             </p>
 
             {/* Paragraph 2 */}
-            <p className="text-sm sm:text-base text-[#242424]/80 leading-relaxed font-normal">
+            <p className="text-xs sm:text-sm md:text-base text-[#242424]/80 leading-relaxed font-normal">
               {venue.bodyPara2}
             </p>
 
             {/* Practical Service Specs */}
-            <div className="pt-2 border-t border-[#D5AD72]/20 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-[#575757]">
-              <div className="flex items-center gap-2">
-                <Clock className="w-3.5 h-3.5 text-[#B88E52] flex-shrink-0" />
+            <div className="pt-2 border-t border-[#D5AD72]/20 grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 text-xs text-[#575757]">
+              <div className="flex items-start gap-2">
+                <Clock className="w-3.5 h-3.5 text-[#B88E52] shrink-0 mt-0.5" />
                 <span>{venue.hours}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-[#B88E52] flex-shrink-0" />
+              <div className="flex items-start gap-2">
+                <Check className="w-3.5 h-3.5 text-[#B88E52] shrink-0 mt-0.5" />
                 <span>Dress: {venue.dressCode}</span>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="pt-4 flex flex-wrap items-center gap-3">
+            {/* Action Buttons - full width on mobile for easy thumb interaction */}
+            <div className="pt-3 sm:pt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
               <Button
                 variant="gold"
                 size="md"
                 onClick={onReserveDining}
                 icon={<ArrowRight className="w-4 h-4" />}
-                className="shadow-sm"
+                className="w-full sm:w-auto shadow-sm min-h-[44px] justify-center"
               >
                 Reserve a Table
               </Button>
               <button
                 onClick={onReserveDining}
-                className="px-5 py-2.5 rounded-[6px] text-xs sm:text-sm font-medium border border-[#142D26] text-[#142D26] hover:bg-[#142D26] hover:text-white transition-colors cursor-pointer"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-[6px] text-xs sm:text-sm font-medium border border-[#142D26] text-[#142D26] hover:bg-[#142D26] hover:text-white transition-colors cursor-pointer min-h-[44px] flex items-center justify-center"
               >
                 View Seasonal Menu
               </button>

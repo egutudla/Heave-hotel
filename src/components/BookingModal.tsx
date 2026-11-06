@@ -14,6 +14,7 @@ import { Room, SearchParams, BookingFormData, BookingResult } from '../types';
 import { submitBooking, checkRoomAvailability } from '../config/api';
 import { Button } from './Button';
 import { useToast } from './Toast';
+import { formatNaira } from '../utils/currency';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -88,7 +89,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const coDate = new Date(checkOut);
   const validDates = !isNaN(ciDate.getTime()) && !isNaN(coDate.getTime()) && coDate > ciDate;
   const nights = validDates ? Math.max(1, Math.round((coDate.getTime() - ciDate.getTime()) / 86400000)) : 1;
-  const pricePerNight = currentRoom?.PricePerNight || 165;
+  const pricePerNight = currentRoom?.PricePerNight || 165000;
   const totalPrice = nights * pricePerNight;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -253,7 +254,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               </span>
               <div className="flex justify-between items-center text-xs text-[#242424]/80 mt-4 pt-3 border-t border-[#D5AD72]/20">
                 <span>{currentRoom?.Name}</span>
-                <span>{nights} {nights === 1 ? 'night' : 'nights'} · ${totalPrice}</span>
+                <span>{nights} {nights === 1 ? 'night' : 'nights'} · {formatNaira(confirmedResult.total || totalPrice)}</span>
               </div>
             </div>
 
@@ -302,7 +303,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   >
                     {allRooms.map((r) => (
                       <option key={r.RoomID} value={r.RoomID}>
-                        {r.Name} (${r.PricePerNight}/night - up to {r.MaxGuests} guests)
+                        {r.Name} ({formatNaira(r.PricePerNight)}/night - up to {r.MaxGuests} guests)
                       </option>
                     ))}
                   </select>
@@ -562,7 +563,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-[#575757]">Nightly Rate</span>
-                      <span className="font-semibold text-[#142D26]">${pricePerNight}</span>
+                      <span className="font-semibold text-[#142D26]">{formatNaira(pricePerNight)}</span>
                     </div>
                   </div>
 
@@ -575,7 +576,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                           className="text-2xl font-serif font-bold text-[#142D26]"
                           style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
                         >
-                          ${totalPrice}
+                          {formatNaira(totalPrice)}
                         </span>
                         <span className="text-[10px] text-[#575757] block">Taxes & fees included</span>
                       </div>

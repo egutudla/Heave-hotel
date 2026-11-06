@@ -5,6 +5,7 @@ import { Button } from '../components/Button';
 import { useToast } from '../components/Toast';
 import { HotelMap } from '../components/HotelMap';
 import { ScrollReveal } from '../components/ScrollReveal';
+import { submitContact } from '../config/api';
 
 interface ContactPageProps {
   onNavigate: (page: string) => void;
@@ -28,7 +29,7 @@ export const ContactPage: React.FC<ContactPageProps> = ({ onNavigate, onOpenBook
     }
 
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    await submitContact({ name, email, phone, message });
     setLoading(false);
     setSubmitted(true);
     showToast('Your message has been sent to the HavenStay concierge team.', 'success');

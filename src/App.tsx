@@ -16,11 +16,18 @@ import { OffersPage } from './pages/OffersPage';
 import { GalleryPage } from './pages/GalleryPage';
 import { AboutPage } from './pages/AboutPage';
 import { ContactPage } from './pages/ContactPage';
+import { AdminDashboardPage } from './pages/AdminDashboardPage';
 
 function HavenStayApp() {
   const [activePage, setActivePage] = useState<
-    'home' | 'rooms' | 'dining' | 'pool-bar' | 'events' | 'offers' | 'gallery' | 'about' | 'contact'
-  >('home');
+    'home' | 'rooms' | 'dining' | 'pool-bar' | 'events' | 'offers' | 'gallery' | 'about' | 'contact' | 'admin'
+  >(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('page') === 'admin') return 'admin';
+    } catch {}
+    return 'home';
+  });
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loadingRooms, setLoadingRooms] = useState<boolean>(true);
 
@@ -248,6 +255,18 @@ function HavenStayApp() {
                 onNavigate={handleNavigate}
                 onOpenBooking={handleOpenGeneralBooking}
               />
+            </motion.div>
+          )}
+
+          {activePage === 'admin' && (
+            <motion.div
+              key="admin"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
+            >
+              <AdminDashboardPage onNavigate={handleNavigate} />
             </motion.div>
           )}
         </AnimatePresence>

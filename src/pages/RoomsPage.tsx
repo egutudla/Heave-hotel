@@ -17,6 +17,7 @@ import { RoomCard } from '../components/RoomCard';
 import { Button } from '../components/Button';
 import { SearchBar } from '../components/SearchBar';
 import { ScrollReveal } from '../components/ScrollReveal';
+import { formatNaira } from '../utils/currency';
 
 interface RoomsPageProps {
   rooms: Room[];
@@ -59,7 +60,7 @@ export const RoomsPage: React.FC<RoomsPageProps> = ({
 }) => {
   // Filter States
   const [selectedType, setSelectedType] = useState<string>('All Types');
-  const [maxPrice, setMaxPrice] = useState<number>(450);
+  const [maxPrice, setMaxPrice] = useState<number>(500000);
   const [minGuests, setMinGuests] = useState<number>(searchParams.adults || 1);
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc'>('default');
@@ -75,7 +76,7 @@ export const RoomsPage: React.FC<RoomsPageProps> = ({
   // Reset all filters
   const resetFilters = () => {
     setSelectedType('All Types');
-    setMaxPrice(450);
+    setMaxPrice(500000);
     setMinGuests(1);
     setSelectedAmenities([]);
     setSortBy('default');
@@ -120,7 +121,7 @@ export const RoomsPage: React.FC<RoomsPageProps> = ({
 
   const activeFilterCount =
     (selectedType !== 'All Types' ? 1 : 0) +
-    (maxPrice < 450 ? 1 : 0) +
+    (maxPrice < 500000 ? 1 : 0) +
     (minGuests > 1 ? 1 : 0) +
     selectedAmenities.length;
 
@@ -314,20 +315,20 @@ export const RoomsPage: React.FC<RoomsPageProps> = ({
                     <span className="text-xs font-semibold uppercase tracking-wider text-[#142D26]">
                       Max Price / Night
                     </span>
-                    <span className="text-xs font-bold text-[#142D26]">${maxPrice}</span>
+                    <span className="text-xs font-bold text-[#142D26]">{formatNaira(maxPrice)}</span>
                   </div>
                   <input
                     type="range"
-                    min={100}
-                    max={450}
-                    step={10}
+                    min={100000}
+                    max={500000}
+                    step={10000}
                     value={maxPrice}
                     onChange={(e) => setMaxPrice(Number(e.target.value))}
                     className="w-full accent-[#142D26] cursor-pointer"
                   />
                   <div className="flex justify-between text-[11px] text-[#575757] mt-1">
-                    <span>$100</span>
-                    <span>$450+</span>
+                    <span>₦100,000</span>
+                    <span>₦500,000+</span>
                   </div>
                 </div>
 
@@ -522,17 +523,21 @@ export const RoomsPage: React.FC<RoomsPageProps> = ({
                 <div>
                   <div className="flex justify-between items-center mb-1 text-xs">
                     <span className="font-semibold text-[#142D26]">Max Nightly Rate</span>
-                    <span className="font-bold text-[#142D26]">${maxPrice}</span>
+                    <span className="font-bold text-[#142D26]">{formatNaira(maxPrice)}</span>
                   </div>
                   <input
                     type="range"
-                    min={100}
-                    max={450}
-                    step={10}
+                    min={100000}
+                    max={500000}
+                    step={10000}
                     value={maxPrice}
                     onChange={(e) => setMaxPrice(Number(e.target.value))}
                     className="w-full accent-[#142D26]"
                   />
+                  <div className="flex justify-between text-[11px] text-[#575757] mt-1">
+                    <span>₦100,000</span>
+                    <span>₦500,000+</span>
+                  </div>
                 </div>
 
                 {/* Guests */}

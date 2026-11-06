@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Users, Wifi, Wind, Bed, ArrowRight, Sparkles, Check } from 'lucide-react';
 import { Room } from '../types';
 import { Button } from './Button';
+import { formatNaira } from '../utils/currency';
 
 interface RoomCardProps {
   room: Room;
@@ -55,12 +56,12 @@ export const RoomCard: React.FC<RoomCardProps> = ({
         <div className="absolute bottom-3 right-3 bg-[#142D26]/90 backdrop-blur-sm px-3.5 py-1.5 rounded-[4px] border border-[#D5AD72]/40 text-right">
           <div className="flex items-baseline gap-1 text-white">
             <span
-              className="text-lg font-serif font-bold text-[#E4C38E]"
+              className="text-base sm:text-lg font-serif font-bold text-[#E4C38E]"
               style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
             >
-              ${room.PricePerNight}
+              {formatNaira(room.PricePerNight)}
             </span>
-            <span className="text-xs text-white/80 font-normal">/ night</span>
+            <span className="text-[11px] sm:text-xs text-white/80 font-normal">/ night</span>
           </div>
         </div>
       </div>

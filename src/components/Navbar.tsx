@@ -50,6 +50,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'gallery', label: 'Gallery' },
     { id: 'about', label: 'About' },
     { id: 'contact', label: 'Contact' },
+    { id: 'admin', label: 'Admin' },
   ];
 
   const handleNavClick = (pageId: string) => {

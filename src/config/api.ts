@@ -20,7 +20,7 @@ export const MOCK_ROOMS: Room[] = [
     RoomID: 'ROOM-101',
     Name: 'Deluxe King Room',
     Type: 'Deluxe',
-    PricePerNight: 165,
+    PricePerNight: 165000,
     MaxGuests: 2,
     Amenities: 'Wi-Fi, Air conditioning, King-size bed, En-suite rainfall shower, Smart TV, City view',
     ImageURL: '/images/hotel/deluxe-1.jpg',
@@ -40,7 +40,7 @@ export const MOCK_ROOMS: Room[] = [
     RoomID: 'ROOM-202',
     Name: 'Executive Suite',
     Type: 'Executive Suite',
-    PricePerNight: 245,
+    PricePerNight: 245000,
     MaxGuests: 3,
     Amenities: 'Wi-Fi, Air conditioning, Separate lounge, Deep soaking tub, Nespresso bar, Executive lounge access',
     ImageURL: '/images/hotel/executive-suite-1.jpg',
@@ -60,7 +60,7 @@ export const MOCK_ROOMS: Room[] = [
     RoomID: 'ROOM-303',
     Name: 'Haven Premier Penthouse',
     Type: 'Penthouse',
-    PricePerNight: 395,
+    PricePerNight: 395000,
     MaxGuests: 4,
     Amenities: 'Wi-Fi, Air conditioning, Panoramic private terrace, Butler service, Marble bathroom, Freestanding tub',
     ImageURL: '/images/hotel/presidential-1.jpg',
@@ -80,7 +80,7 @@ export const MOCK_ROOMS: Room[] = [
     RoomID: 'ROOM-104',
     Name: 'Superior Double Room',
     Type: 'Superior',
-    PricePerNight: 145,
+    PricePerNight: 145000,
     MaxGuests: 2,
     Amenities: 'Wi-Fi, Air conditioning, Plush queen bed, Designer desk, Walk-in shower, Artisanal tea selection',
     ImageURL: '/images/hotel/deluxe-1.jpg',
@@ -99,7 +99,7 @@ export const MOCK_ROOMS: Room[] = [
     RoomID: 'ROOM-205',
     Name: 'Family Garden Suite',
     Type: 'Family Suite',
-    PricePerNight: 285,
+    PricePerNight: 285000,
     MaxGuests: 5,
     Amenities: 'Wi-Fi, Air conditioning, Two separate bedrooms, Kitchenette, Garden view patio, Double vanities',
     ImageURL: '/images/hotel/executive-suite-1.jpg',
@@ -119,7 +119,7 @@ export const MOCK_ROOMS: Room[] = [
     RoomID: 'ROOM-106',
     Name: 'Classic Comfort Suite',
     Type: 'Classic',
-    PricePerNight: 125,
+    PricePerNight: 125000,
     MaxGuests: 2,
     Amenities: 'Wi-Fi, Air conditioning, Cozy seating nook, Luxury bath amenities, High-thread-count linens',
     ImageURL: '/images/hotel/deluxe-1.jpg',
@@ -165,7 +165,7 @@ export async function fetchRooms(): Promise<Room[]> {
         // Normalize any boolean string from Google Sheets
         return data.map((room) => ({
           ...room,
-          PricePerNight: Number(room.PricePerNight) || 150,
+          PricePerNight: Number(room.PricePerNight) || 165000,
           MaxGuests: Number(room.MaxGuests) || 2,
           Active: room.Active === true || room.Active === 'TRUE',
         }));
@@ -195,7 +195,7 @@ export async function checkRoomAvailability(
     const co = new Date(checkOut);
 
     const hasConflict = existingBookings.some((b) => {
-      if (b.roomId !== roomId) return false;
+      if (b.roomId !== roomId || b.status === 'Cancelled') return false;
       const bci = new Date(b.checkIn);
       const bco = new Date(b.checkOut);
       return ci < bco && co > bci;
@@ -241,8 +241,19 @@ export async function submitBooking(formData: BookingFormData): Promise<BookingR
   const total = nights * room.PricePerNight;
   const localRef = 'HS-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
-  // Always persist booking locally
-  saveStoredBooking(formData);
+  // Save complete booking record locally
+  const newBookingRecord: BookingRecord = {
+    ...formData,
+    id: localRef,
+    bookingRef: localRef,
+    roomName: room.Name,
+    pricePerNight: room.PricePerNight,
+    nights,
+    total,
+    status: 'Pending',
+    createdAt: new Date().toISOString(),
+  };
+  saveStoredBooking(newBookingRecord);
 
   if (!APPS_SCRIPT_URL) {
     await new Promise((resolve) => setTimeout(resolve, 600));
@@ -360,22 +371,224 @@ export async function submitNewsletter(email: string): Promise<{ success: boolea
   }
 }
 
+/**
+ * Contact message submission.
+ */
+export async function submitContact(data: {
+  name: string;
+  email: string;
+  phone: string;
+  message: string;
+}): Promise<{ success: boolean; message?: string }> {
+  // Store contact inquiry locally for Admin Dashboard
+  saveStoredContact({
+    id: 'MSG-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
+    ...data,
+    createdAt: new Date().toISOString(),
+    status: 'New',
+  });
+
+  if (!APPS_SCRIPT_URL) {
+    return { success: true };
+  }
+
+  try {
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8',
+      },
+      body: JSON.stringify({ type: 'contact', ...data }),
+    });
+  } catch {}
+  return { success: true };
+}
+
 // Local mock storage helpers
-function getStoredBookings(): BookingFormData[] {
+import { BookingRecord } from '../types';
+
+export function getStoredBookings(): BookingRecord[] {
   try {
     const data = localStorage.getItem('havenstay_mock_bookings');
-    return data ? JSON.parse(data) : [];
+    if (!data) {
+      return seedInitialBookings();
+    }
+    return JSON.parse(data);
   } catch {
     return [];
   }
 }
 
-function saveStoredBooking(b: BookingFormData) {
+export function saveStoredBooking(b: BookingRecord) {
   try {
     const list = getStoredBookings();
-    list.push(b);
-    localStorage.setItem('havenstay_mock_bookings', JSON.stringify(list));
+    // Add to front so newest appears first
+    const updated = [b, ...list.filter((item) => item.id !== b.id && item.bookingRef !== b.bookingRef)];
+    localStorage.setItem('havenstay_mock_bookings', JSON.stringify(updated));
   } catch {
     // ignore
   }
 }
+
+export function updateStoredBookingStatus(
+  refOrId: string,
+  newStatus: BookingRecord['status']
+): BookingRecord[] {
+  try {
+    const list = getStoredBookings();
+    const updated = list.map((b) =>
+      b.id === refOrId || b.bookingRef === refOrId ? { ...b, status: newStatus } : b
+    );
+    localStorage.setItem('havenstay_mock_bookings', JSON.stringify(updated));
+    return updated;
+  } catch {
+    return [];
+  }
+}
+
+export function deleteStoredBooking(refOrId: string): BookingRecord[] {
+  try {
+    const list = getStoredBookings();
+    const updated = list.filter((b) => b.id !== refOrId && b.bookingRef !== refOrId);
+    localStorage.setItem('havenstay_mock_bookings', JSON.stringify(updated));
+    return updated;
+  } catch {
+    return [];
+  }
+}
+
+function seedInitialBookings(): BookingRecord[] {
+  const seeds: BookingRecord[] = [
+    {
+      id: 'HS-8K2N9P',
+      bookingRef: 'HS-8K2N9P',
+      roomId: 'ROOM-101',
+      roomName: 'Deluxe King Room',
+      pricePerNight: 165000,
+      checkIn: '2026-11-12',
+      checkOut: '2026-11-15',
+      nights: 3,
+      adults: 2,
+      children: 0,
+      fullName: 'Chinedu Okafor',
+      email: 'chinedu.okafor@example.com',
+      phone: '+234 803 456 7890',
+      requests: 'High floor preferred, quiet room with city skyline view.',
+      paymentPref: 'Pay at hotel',
+      consent: true,
+      status: 'Confirmed',
+      createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+      total: 495000,
+    },
+    {
+      id: 'HS-4M7Q2A',
+      bookingRef: 'HS-4M7Q2A',
+      roomId: 'ROOM-202',
+      roomName: 'Executive Suite',
+      pricePerNight: 245000,
+      checkIn: '2026-11-14',
+      checkOut: '2026-11-17',
+      nights: 3,
+      adults: 2,
+      children: 1,
+      fullName: 'Fatima Aliyu',
+      email: 'f.aliyu@example.com',
+      phone: '+234 812 345 6789',
+      requests: 'Airport pickup requested at 2:00 PM.',
+      paymentPref: 'Send me a payment link',
+      consent: true,
+      status: 'Pending',
+      createdAt: new Date(Date.now() - 3600000 * 1).toISOString(),
+      total: 735000,
+    },
+    {
+      id: 'HS-9W1L4D',
+      bookingRef: 'HS-9W1L4D',
+      roomId: 'ROOM-303',
+      roomName: 'Haven Premier Penthouse',
+      pricePerNight: 395000,
+      checkIn: '2026-11-18',
+      checkOut: '2026-11-20',
+      nights: 2,
+      adults: 2,
+      children: 0,
+      fullName: 'Tunde Balogun',
+      email: 'tunde.b@example.com',
+      phone: '+234 907 577 2701',
+      requests: 'Anniversary celebration. Complimentary champagne setup please.',
+      paymentPref: 'Pay at hotel',
+      consent: true,
+      status: 'Confirmed',
+      createdAt: new Date(Date.now() - 3600000 * 18).toISOString(),
+      total: 790000,
+    },
+  ];
+  try {
+    localStorage.setItem('havenstay_mock_bookings', JSON.stringify(seeds));
+  } catch {}
+  return seeds;
+}
+
+// Contact messages helpers
+export interface StoredContact {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  message: string;
+  createdAt: string;
+  status: 'New' | 'Replied';
+}
+
+export function getStoredContacts(): StoredContact[] {
+  try {
+    const data = localStorage.getItem('havenstay_mock_contacts');
+    if (!data) {
+      const defaultContacts: StoredContact[] = [
+        {
+          id: 'MSG-A1',
+          name: 'Emeka Nwosu',
+          email: 'emeka@example.com',
+          phone: '+234 809 112 2334',
+          message: 'Hello, I want to book the Grand Ballroom for an executive corporate conference next month.',
+          createdAt: new Date(Date.now() - 3600000 * 6).toISOString(),
+          status: 'New',
+        },
+        {
+          id: 'MSG-A2',
+          name: 'Amina Bello',
+          email: 'amina@example.com',
+          phone: '+234 814 556 7788',
+          message: 'Can I request early check-in at 10 AM for the Executive Suite?',
+          createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
+          status: 'Replied',
+        },
+      ];
+      localStorage.setItem('havenstay_mock_contacts', JSON.stringify(defaultContacts));
+      return defaultContacts;
+    }
+    return JSON.parse(data);
+  } catch {
+    return [];
+  }
+}
+
+export function saveStoredContact(c: StoredContact) {
+  try {
+    const list = getStoredContacts();
+    const updated = [c, ...list.filter((item) => item.id !== c.id)];
+    localStorage.setItem('havenstay_mock_contacts', JSON.stringify(updated));
+  } catch {}
+}
+
+export function deleteStoredContact(id: string): StoredContact[] {
+  try {
+    const list = getStoredContacts();
+    const updated = list.filter((item) => item.id !== id);
+    localStorage.setItem('havenstay_mock_contacts', JSON.stringify(updated));
+    return updated;
+  } catch {
+    return [];
+  }
+}
+

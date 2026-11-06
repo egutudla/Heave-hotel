@@ -43,6 +43,17 @@ export interface BookingResult {
   message?: string;
 }
 
+export interface BookingRecord extends BookingFormData {
+  id: string;
+  bookingRef: string;
+  roomName: string;
+  pricePerNight: number;
+  nights: number;
+  total: number;
+  status: 'Pending' | 'Confirmed' | 'Checked-In' | 'Completed' | 'Cancelled';
+  createdAt: string;
+}
+
 export interface AmenityItem {
   id: string;
   name: string;
