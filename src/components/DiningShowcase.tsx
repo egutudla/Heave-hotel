@@ -82,62 +82,36 @@ export const DiningShowcase: React.FC<DiningShowcaseProps> = ({ onReserveDining 
   const [activeTab, setActiveTab] = useState<string>('restaurant');
 
   const venue = DINING_VENUES.find((v) => v.id === activeTab) || DINING_VENUES[0];
-  const currentIndex = DINING_VENUES.findIndex((v) => v.id === activeTab);
-
-  const handleNextVenue = () => {
-    const nextIdx = (currentIndex + 1) % DINING_VENUES.length;
-    setActiveTab(DINING_VENUES[nextIdx].id);
-  };
-
-  const handlePrevVenue = () => {
-    const prevIdx = (currentIndex - 1 + DINING_VENUES.length) % DINING_VENUES.length;
-    setActiveTab(DINING_VENUES[prevIdx].id);
-  };
 
   return (
     <section className="py-12 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      {/* Category Tabs: mobile horizontal scroll with snap-x, desktop centered */}
+      {/* Category Tabs: Horizontally scrollable row on mobile with comfortable edge padding, centered on desktop */}
       <ScrollReveal yOffset={25}>
-        <div className="mb-8 sm:mb-14">
-          <div className="flex items-center justify-start sm:justify-center gap-2 sm:gap-3 overflow-x-auto pb-2 scrollbar-none snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
-            {DINING_VENUES.map((item) => {
-              const isActive = item.id === activeTab;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`shrink-0 snap-center px-4 sm:px-6 py-2.5 rounded-full text-xs sm:text-sm font-medium tracking-wide transition-all cursor-pointer whitespace-nowrap min-h-[44px] flex items-center ${
-                    isActive
-                      ? 'bg-[#142D26] text-white shadow-md ring-2 ring-[#D5AD72]/40'
-                      : 'bg-white text-[#242424] hover:bg-[#142D26]/5 border border-[#D5AD72]/30'
-                  }`}
-                >
-                  <span>{item.tabLabel}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Mobile pagination & quick switcher helper */}
-          <div className="flex sm:hidden items-center justify-between text-xs text-[#575757] pt-2 px-1">
-            <span className="font-medium text-[#142D26]">
-              {currentIndex + 1} of {DINING_VENUES.length} · {venue.tabLabel}
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handlePrevVenue}
-                className="px-2 py-1 rounded bg-white border border-[#D5AD72]/40 text-[#142D26] active:bg-[#ECE8DE]"
-                aria-label="Previous venue"
-              >
-                ← Prev
-              </button>
-              <button
-                onClick={handleNextVenue}
-                className="px-2 py-1 rounded bg-[#142D26] text-white active:bg-black"
-                aria-label="Next venue"
-              >
-                Next →
-              </button>
+        <div className="mb-10 sm:mb-16 w-full">
+          <div
+            className="w-full overflow-x-auto scrollbar-none pb-3 pt-1 -mx-4 px-4 sm:mx-0 sm:px-0"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
+            <div className="flex items-center justify-start sm:justify-center gap-3 sm:gap-3.5 w-max min-w-full sm:w-auto px-4 sm:px-0">
+              {DINING_VENUES.map((item) => {
+                const isActive = item.id === activeTab;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setActiveTab(item.id)}
+                    className={`shrink-0 flex-shrink-0 whitespace-nowrap px-5 sm:px-7 py-2.5 rounded-full text-xs sm:text-sm font-medium tracking-wide transition-all cursor-pointer min-h-[44px] flex items-center justify-center select-none ${
+                      isActive
+                        ? 'bg-[#142D26] text-white shadow-md ring-2 ring-[#D5AD72]/40'
+                        : 'bg-white text-[#242424] hover:bg-[#142D26]/5 border border-[#D5AD72]/30 shadow-xs'
+                    }`}
+                  >
+                    <span>{item.tabLabel}</span>
+                  </button>
+                );
+              })}
+              {/* Extra trailing space on mobile so the final category pill is never clipped at screen edge */}
+              <div className="w-5 shrink-0 flex-shrink-0 sm:hidden" aria-hidden="true" />
             </div>
           </div>
         </div>

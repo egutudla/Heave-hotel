@@ -88,3 +88,90 @@ export interface ToastNotification {
   message: string;
   duration?: number;
 }
+
+export interface AdminUser {
+  id: string;
+  username: string;
+  email: string;
+  role: 'Super Admin' | 'General Manager' | 'Reservations Manager' | 'Duty Manager';
+  name: string;
+  lastLogin?: string;
+}
+
+export type AdminPortalSection =
+  | 'overview'
+  | 'reservations'
+  | 'rooms'
+  | 'guests'
+  | 'revenue'
+  | 'dining'
+  | 'events-offers'
+  | 'gallery'
+  | 'website-content'
+  | 'settings';
+
+export interface MenuItem {
+  id: string;
+  name: string;
+  category: 'Appetizers' | 'Mains' | 'Seafood' | 'Desserts' | 'Cocktails' | 'Wine';
+  price: number;
+  description: string;
+  available: boolean;
+}
+
+export interface DiningVenueData {
+  id: string;
+  name: string;
+  tagline: string;
+  hours: string;
+  dressCode: string;
+  capacity: number;
+  menu: MenuItem[];
+}
+
+export interface HotelEventOffer {
+  id: string;
+  type: 'event' | 'offer';
+  title: string;
+  subtitle: string;
+  category: string;
+  discountOrPrice: string;
+  validThrough: string;
+  status: 'Active' | 'Draft' | 'Expired';
+  description: string;
+}
+
+export interface GalleryPhoto {
+  id: string;
+  title: string;
+  category: 'Suites' | 'Dining' | 'Pool & Bar' | 'Architecture' | 'Events';
+  imageUrl: string;
+  featured: boolean;
+  uploadedAt: string;
+}
+
+export interface GuestProfile {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  totalBookings: number;
+  totalSpent: number;
+  lastVisit: string;
+  vipStatus: boolean;
+  notes?: string;
+}
+
+export interface HotelContentSettings {
+  hotelName: string;
+  tagline: string;
+  phone: string;
+  whatsapp: string;
+  email: string;
+  address: string;
+  checkInTime: string;
+  checkOutTime: string;
+  heroHeadline: string;
+  heroSubheadline: string;
+}
+

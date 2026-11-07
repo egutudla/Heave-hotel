@@ -241,6 +241,46 @@ export async function submitBooking(formData: BookingFormData): Promise<BookingR
   const total = nights * room.PricePerNight;
   const localRef = 'HS-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
+  // 1. Send to server-side API (which records into shared store and relays to Apps Script)
+  try {
+    const serverRes = await fetch('/api/bookings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...formData,
+        roomName: room.Name,
+        pricePerNight: room.PricePerNight,
+      }),
+    });
+    if (serverRes.ok) {
+      const serverData = await serverRes.json();
+      if (serverData.success) {
+        const assignedRef = serverData.bookingRef || localRef;
+        const confirmedBooking: BookingRecord = {
+          ...formData,
+          id: assignedRef,
+          bookingRef: assignedRef,
+          roomName: room.Name,
+          pricePerNight: room.PricePerNight,
+          nights: serverData.nights || nights,
+          total: serverData.total || total,
+          status: 'Pending',
+          createdAt: new Date().toISOString(),
+        };
+        saveStoredBooking(confirmedBooking);
+        return {
+          success: true,
+          bookingRef: assignedRef,
+          nights: serverData.nights || nights,
+          total: serverData.total || total,
+          message: serverData.message,
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('HavenStay API: Server endpoint /api/bookings unavailable, attempting direct relay:', err);
+  }
+
   // Save complete booking record locally
   const newBookingRecord: BookingRecord = {
     ...formData,
@@ -455,6 +495,94 @@ export function deleteStoredBooking(refOrId: string): BookingRecord[] {
   } catch {
     return [];
   }
+}
+
+/**
+ * Fetch all reservations from server-side admin endpoint /api/admin/reservations
+ */
+export async function fetchAdminReservations(): Promise<BookingRecord[]> {
+  const token = sessionStorage.getItem('havenstay_management_token') || localStorage.getItem('havenstay_management_token');
+  try {
+    const res = await fetch('/api/admin/reservations', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.reservations)) {
+        localStorage.setItem('havenstay_mock_bookings', JSON.stringify(data.reservations));
+        return data.reservations;
+      }
+    }
+  } catch (err) {
+    console.warn('HavenStay API: Error fetching server reservations, using cached store:', err);
+  }
+  return getStoredBookings();
+}
+
+/**
+ * Update reservation status on server /api/admin/reservations/:id
+ */
+export async function updateAdminReservationStatus(
+  refOrId: string,
+  newStatus: BookingRecord['status']
+): Promise<BookingRecord[]> {
+  const token = sessionStorage.getItem('havenstay_management_token') || localStorage.getItem('havenstay_management_token');
+  try {
+    await fetch(`/api/admin/reservations/${encodeURIComponent(refOrId)}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ status: newStatus }),
+    });
+  } catch (err) {
+    console.warn('HavenStay API: Server update failed, applying local mirror update:', err);
+  }
+  return updateStoredBookingStatus(refOrId, newStatus);
+}
+
+/**
+ * Delete reservation on server /api/admin/reservations/:id
+ */
+export async function deleteAdminReservation(refOrId: string): Promise<BookingRecord[]> {
+  const token = sessionStorage.getItem('havenstay_management_token') || localStorage.getItem('havenstay_management_token');
+  try {
+    await fetch(`/api/admin/reservations/${encodeURIComponent(refOrId)}`, {
+      method: 'DELETE',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+  } catch (err) {
+    console.warn('HavenStay API: Server delete failed, applying local delete:', err);
+  }
+  return deleteStoredBooking(refOrId);
+}
+
+/**
+ * Fetch live admin dashboard statistics
+ */
+export async function fetchAdminStats(): Promise<{
+  total: number;
+  pending: number;
+  confirmed: number;
+  cancelled: number;
+  totalRevenue: number;
+  occupancyRate: number;
+  currency: string;
+} | null> {
+  const token = sessionStorage.getItem('havenstay_management_token') || localStorage.getItem('havenstay_management_token');
+  try {
+    const res = await fetch('/api/admin/stats', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.stats) {
+        return data.stats;
+      }
+    }
+  } catch {}
+  return null;
 }
 
 function seedInitialBookings(): BookingRecord[] {

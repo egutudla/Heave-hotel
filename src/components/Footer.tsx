@@ -117,14 +117,6 @@ export const Footer: React.FC<FooterProps> = ({
                   Contact Concierge
                 </button>
               </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('admin')}
-                  className="text-[#D5AD72] hover:text-white transition-colors cursor-pointer text-left flex items-center gap-1.5 font-medium"
-                >
-                  <span>Staff & Admin Portal</span>
-                </button>
-              </li>
             </ul>
           </div>
 
@@ -270,13 +262,6 @@ export const Footer: React.FC<FooterProps> = ({
             <span className="hover:text-white transition-colors cursor-pointer">Privacy Policy</span>
             <span aria-hidden="true" className="text-white/25">·</span>
             <span className="hover:text-white transition-colors cursor-pointer">Cookie Policy</span>
-            <span aria-hidden="true" className="text-white/25">·</span>
-            <button
-              onClick={() => onNavigate('admin')}
-              className="hover:text-[#D5AD72] transition-colors cursor-pointer text-white/50"
-            >
-              Admin Portal
-            </button>
           </div>
 
           {/* Back to top pill button matching reference */}

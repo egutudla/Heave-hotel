@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Shield,
-  KeyRound,
   LogOut,
   Calendar,
   Users,
@@ -11,7 +10,6 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
-  XCircle,
   Phone,
   Mail,
   MessageCircle,
@@ -22,8 +20,6 @@ import {
   RefreshCw,
   Printer,
   Bed,
-  CreditCard,
-  DollarSign,
   TrendingUp,
   Sliders,
   Check,
@@ -31,6 +27,16 @@ import {
   Trash2,
   X,
   Building,
+  Utensils,
+  Wine,
+  Sparkles,
+  PartyPopper,
+  Tag,
+  Image,
+  Globe,
+  Edit3,
+  Save,
+  Copy,
 } from 'lucide-react';
 import { BookingRecord, Room } from '../types';
 import {
@@ -44,26 +50,41 @@ import {
   APPS_SCRIPT_URL,
   MOCK_ROOMS,
 } from '../config/api';
-import { formatNaira, CURRENCY_SYMBOL } from '../utils/currency';
+import { isAdminAuthenticated, adminLogout, getAdminUser } from '../services/auth';
+import { formatNaira } from '../utils/currency';
 import { Button } from '../components/Button';
 import { useToast } from '../components/Toast';
+import { DINING_VENUES } from '../components/DiningShowcase';
 
 interface AdminDashboardPageProps {
   onNavigate: (page: string) => void;
 }
 
+type DashboardSection =
+  | 'reservations'
+  | 'rooms'
+  | 'dining'
+  | 'pool-bar'
+  | 'events'
+  | 'offers'
+  | 'gallery'
+  | 'inquiries'
+  | 'website';
+
 export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNavigate }) => {
   const { showToast } = useToast();
+  const currentUser = getAdminUser();
 
-  // Authentication State
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return sessionStorage.getItem('havenstay_admin_auth') === 'true';
-  });
-  const [passkeyInput, setPasskeyInput] = useState('');
-  const [authError, setAuthError] = useState('');
+  // Route Protection: Redirect if unauthenticated
+  useEffect(() => {
+    if (!isAdminAuthenticated()) {
+      showToast('Access restricted. Please authenticate first.', 'error');
+      onNavigate('admin-login');
+    }
+  }, [onNavigate, showToast]);
 
-  // Active Dashboard Tab
-  const [activeTab, setActiveTab] = useState<'bookings' | 'rooms' | 'inquiries' | 'sync'>('bookings');
+  // Active Dashboard Section
+  const [activeSection, setActiveSection] = useState<DashboardSection>('reservations');
 
   // Bookings Data
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
@@ -106,10 +127,13 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
   // Google Sheets Ping State
   const [pingLoading, setPingLoading] = useState(false);
   const [pingResult, setPingResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [copiedScript, setCopiedScript] = useState(false);
 
   // Load Data on Mount
   useEffect(() => {
-    refreshData();
+    if (isAdminAuthenticated()) {
+      refreshData();
+    }
   }, []);
 
   const refreshData = () => {
@@ -117,25 +141,11 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
     setContacts(getStoredContacts());
   };
 
-  // Auth Handler
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError('');
-    // Default passkey is 1234 or manager password
-    if (passkeyInput === '1234' || passkeyInput.toLowerCase() === 'havenstay' || passkeyInput === '2026') {
-      setIsAuthenticated(true);
-      sessionStorage.setItem('havenstay_admin_auth', 'true');
-      showToast('Welcome to HavenStay Manager Portal', 'success');
-    } else {
-      setAuthError('Invalid management passkey. Hint: default passkey is 1234');
-    }
-  };
-
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    sessionStorage.removeItem('havenstay_admin_auth');
-    setPasskeyInput('');
-    showToast('Logged out of admin dashboard', 'info');
+  // Logout Handler
+  const handleLogout = async () => {
+    await adminLogout();
+    showToast('Administrator session terminated successfully.', 'info');
+    onNavigate('admin-login');
   };
 
   // Status Update Handler
@@ -145,7 +155,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
     showToast(`Reservation ${ref} marked as ${newStatus}`, 'success');
   };
 
-  // Delete Handler
+  // Delete Booking Handler
   const handleDeleteBooking = (ref: string) => {
     if (window.confirm(`Are you sure you want to remove reservation ${ref}?`)) {
       const updated = deleteStoredBooking(ref);
@@ -298,7 +308,8 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
       `"${b.status}"`,
     ]);
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const csvContent =
+      'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
@@ -312,11 +323,9 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
   // Filtered Bookings
   const filteredBookings = useMemo(() => {
     return bookings.filter((b) => {
-      // Status filter
       if (selectedStatusFilter !== 'All' && b.status !== selectedStatusFilter) {
         return false;
       }
-      // Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchesRef = b.bookingRef?.toLowerCase().includes(q);
@@ -333,21 +342,21 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
   // Performance KPI Metrics
   const metrics = useMemo(() => {
     const totalCount = bookings.length;
-    const confirmedCount = bookings.filter((b) => b.status === 'Confirmed' || b.status === 'Checked-In').length;
+    const confirmedCount = bookings.filter(
+      (b) => b.status === 'Confirmed' || b.status === 'Checked-In'
+    ).length;
     const pendingCount = bookings.filter((b) => b.status === 'Pending').length;
     const totalRevenue = bookings
       .filter((b) => b.status !== 'Cancelled')
       .reduce((acc, curr) => acc + (curr.total || 0), 0);
-    const occupancyRate = Math.min(100, Math.round((confirmedCount / Math.max(1, roomsList.length * 3)) * 100));
 
     return {
       totalCount,
       confirmedCount,
       pendingCount,
       totalRevenue,
-      occupancyRate,
     };
-  }, [bookings, roomsList]);
+  }, [bookings]);
 
   // WhatsApp Message Generator
   const getWhatsAppMessage = (b: BookingRecord) => {
@@ -356,102 +365,43 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
     return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
   };
 
-  // If not logged in, show elegant login screen
-  if (!isAuthenticated) {
+  // If unauthenticated, show security guard screen while redirecting
+  if (!isAdminAuthenticated()) {
     return (
-      <div className="min-h-screen pt-28 pb-20 px-4 flex items-center justify-center bg-[#0D1F1A]">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md bg-white rounded-2xl p-8 sm:p-10 shadow-[0_24px_60px_rgba(0,0,0,0.4)] border border-[#D5AD72]/40"
-        >
-          <div className="text-center space-y-2 mb-8">
-            <div className="w-14 h-14 mx-auto rounded-xl bg-[#142D26] text-[#D5AD72] flex items-center justify-center shadow-md">
-              <Shield className="w-7 h-7" />
-            </div>
-            <div className="inline-flex items-center gap-2 pt-2">
-              <span className="h-[1px] w-5 bg-[#D5AD72]" />
-              <span className="text-[11px] font-serif uppercase tracking-[0.2em] font-semibold text-[#B88E52]">
-                Staff & Concierge
-              </span>
-              <span className="h-[1px] w-5 bg-[#D5AD72]" />
-            </div>
-            <h1
-              className="text-2xl font-serif font-bold text-[#142D26]"
-              style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-            >
-              Management Portal
-            </h1>
-            <p className="text-xs text-[#575757]">
-              Enter your executive access passkey to manage HavenStay reservations and rates.
-            </p>
-          </div>
-
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label
-                htmlFor="admin-passkey"
-                className="block text-xs font-semibold uppercase tracking-wider text-[#142D26] mb-1.5"
-              >
-                Access Passkey / PIN
-              </label>
-              <div className="relative">
-                <input
-                  id="admin-passkey"
-                  type="password"
-                  value={passkeyInput}
-                  onChange={(e) => setPasskeyInput(e.target.value)}
-                  placeholder="Enter manager passkey (Default: 1234)"
-                  className="w-full h-12 pl-10 pr-4 bg-[#F7F5F0] border border-[#D5AD72]/40 rounded-xl text-sm text-[#142D26] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D5AD72]"
-                  autoFocus
-                />
-                <KeyRound className="w-4 h-4 text-[#B88E52] absolute left-3.5 top-4" />
-              </div>
-              {authError && <p className="text-xs text-red-600 mt-1.5 font-medium">{authError}</p>}
-            </div>
-
-            <Button
-              type="submit"
-              variant="gold"
-              fullWidth
-              size="lg"
-              className="shadow-md min-h-[48px]"
-            >
-              Unlock Dashboard
-            </Button>
-
-            <div className="pt-4 text-center">
-              <button
-                type="button"
-                onClick={() => onNavigate('home')}
-                className="text-xs text-[#575757] hover:text-[#142D26] transition-colors cursor-pointer"
-              >
-                ← Return to Guest Website
-              </button>
-            </div>
-          </form>
-        </motion.div>
+      <div className="min-h-screen pt-28 pb-20 px-4 flex items-center justify-center bg-[#F7F5F0]">
+        <div className="text-center space-y-3 p-8 bg-white rounded-2xl border border-[#D5AD72]/40 shadow-md max-w-sm">
+          <Shield className="w-10 h-10 text-[#142D26] mx-auto animate-pulse" />
+          <h2 className="text-lg font-serif font-bold text-[#142D26]">Protected Portal</h2>
+          <p className="text-xs text-[#575757]">
+            Redirecting to Administrator Login...
+          </p>
+          <Button variant="gold" size="sm" onClick={() => onNavigate('admin-login')}>
+            Go to Admin Login
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pt-24 pb-20 bg-[#F7F5F0] text-[#242424]">
+    <div className="min-h-screen pt-20 pb-20 bg-[#F7F5F0] text-[#242424]">
       {/* Top Admin Header Bar */}
-      <div className="bg-[#142D26] text-white border-b border-[#D5AD72]/30 py-6 px-4 sm:px-6 lg:px-8">
+      <div className="bg-[#142D26] text-white border-b border-[#D5AD72]/30 py-5 px-4 sm:px-6 lg:px-8 shadow-sm">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-3">
               <span className="px-2.5 py-0.5 rounded bg-[#D5AD72]/20 text-[#D5AD72] text-[11px] font-semibold tracking-wider uppercase">
-                Hotel Operations
+                Hotel Operations Portal
               </span>
-              <span className="text-xs text-white/60">HavenStay Hotels Nigeria</span>
+              <span className="text-xs text-white/60">
+                Logged in as: <strong className="text-white">{currentUser?.email || 'Administrator'}</strong>
+              </span>
             </div>
             <h1
               className="text-2xl sm:text-3xl font-serif font-bold text-white tracking-tight"
               style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
             >
-              Executive Management Dashboard
+              HavenStay Management Dashboard
             </h1>
           </div>
 
@@ -482,10 +432,11 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
             </button>
             <button
               onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-red-500/20 text-red-200 hover:bg-red-500/30 text-xs font-medium border border-red-400/30 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-red-500/20 text-red-200 hover:bg-red-500/30 text-xs font-semibold border border-red-400/30 transition-colors cursor-pointer"
+              title="Terminate Administrator Session"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span>Exit Portal</span>
+              <span>Logout</span>
             </button>
           </div>
         </div>
@@ -516,7 +467,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
               {formatNaira(metrics.totalRevenue)}
             </div>
             <div className="text-[11px] text-[#25D366] font-medium">
-              <span>All active bookings</span>
+              <span>All active reservations</span>
             </div>
           </div>
 
@@ -529,76 +480,58 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
               {metrics.pendingCount}
             </div>
             <div className="text-[11px] text-[#575757]">
-              <span>Require staff verification</span>
+              <span>Require staff follow-up</span>
             </div>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-[#D5AD72]/30 shadow-xs space-y-2">
             <div className="flex items-center justify-between text-xs text-[#575757]">
-              <span>Room Catalog</span>
+              <span>Room Inventory</span>
               <Bed className="w-4 h-4 text-[#142D26]" />
             </div>
             <div className="text-2xl sm:text-3xl font-serif font-bold text-[#142D26]">
               {roomsList.length} Suites
             </div>
             <div className="text-[11px] text-[#575757]">
-              <span>Nightly pricing in ₦ Naira</span>
+              <span>Calibrated in ₦ Naira</span>
             </div>
           </div>
         </div>
 
-        {/* Tab Navigation */}
+        {/* Section Navigation Tabs (Covering all requested hotel management areas) */}
         <div className="flex items-center gap-2 border-b border-[#D5AD72]/30 overflow-x-auto pb-px scrollbar-none">
-          <button
-            onClick={() => setActiveTab('bookings')}
-            className={`px-5 py-3 text-xs sm:text-sm font-semibold tracking-wide border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'bookings'
-                ? 'border-[#142D26] text-[#142D26] bg-white rounded-t-lg'
-                : 'border-transparent text-[#575757] hover:text-[#142D26]'
-            }`}
-          >
-            <span>Reservations Master ({bookings.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('rooms')}
-            className={`px-5 py-3 text-xs sm:text-sm font-semibold tracking-wide border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'rooms'
-                ? 'border-[#142D26] text-[#142D26] bg-white rounded-t-lg'
-                : 'border-transparent text-[#575757] hover:text-[#142D26]'
-            }`}
-          >
-            <span>Room Inventory & Rates ({roomsList.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('inquiries')}
-            className={`px-5 py-3 text-xs sm:text-sm font-semibold tracking-wide border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'inquiries'
-                ? 'border-[#142D26] text-[#142D26] bg-white rounded-t-lg'
-                : 'border-transparent text-[#575757] hover:text-[#142D26]'
-            }`}
-          >
-            <span>Guest Inquiries ({contacts.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('sync')}
-            className={`px-5 py-3 text-xs sm:text-sm font-semibold tracking-wide border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'sync'
-                ? 'border-[#142D26] text-[#142D26] bg-white rounded-t-lg'
-                : 'border-transparent text-[#575757] hover:text-[#142D26]'
-            }`}
-          >
-            <span className="flex items-center gap-1.5">
-              <FileSpreadsheet className="w-4 h-4 text-[#107c41]" />
-              <span>Google Sheets Sync</span>
-            </span>
-          </button>
+          {[
+            { id: 'reservations', label: 'Reservations & Guests', count: bookings.length },
+            { id: 'rooms', label: 'Rooms & Suites', count: roomsList.length },
+            { id: 'dining', label: 'Dining & Venues', count: 3 },
+            { id: 'pool-bar', label: 'Pool & Bar', count: null },
+            { id: 'events', label: 'Events & Weddings', count: null },
+            { id: 'offers', label: 'Offers & Packages', count: null },
+            { id: 'gallery', label: 'Visual Gallery', count: null },
+            { id: 'inquiries', label: 'Contact Inquiries', count: contacts.length },
+            { id: 'website', label: 'Website & Sheets Sync', count: null },
+          ].map((tab) => {
+            const isActive = activeSection === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveSection(tab.id as DashboardSection)}
+                className={`px-4 sm:px-5 py-3 text-xs sm:text-sm font-semibold tracking-wide border-b-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                  isActive
+                    ? 'border-[#142D26] text-[#142D26] bg-white rounded-t-xl shadow-xs'
+                    : 'border-transparent text-[#575757] hover:text-[#142D26]'
+                }`}
+              >
+                <span>
+                  {tab.label} {tab.count !== null ? `(${tab.count})` : ''}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* TAB 1: BOOKINGS MASTER */}
-        {activeTab === 'bookings' && (
+        {/* SECTION 1: RESERVATIONS & GUESTS */}
+        {activeSection === 'reservations' && (
           <div className="space-y-6">
             {/* Search & Filters */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-[#D5AD72]/30 shadow-xs">
@@ -608,30 +541,32 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search guest, phone (+234...), ref, or room..."
+                  placeholder="Search guest name, phone (+234...), ref, or room..."
                   className="w-full h-10 pl-9 pr-4 bg-[#F7F5F0] border border-[#D5AD72]/30 rounded-lg text-xs sm:text-sm text-[#242424] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#D5AD72]"
                 />
               </div>
 
               {/* Status Filter Badges */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-                {['All', 'Pending', 'Confirmed', 'Checked-In', 'Completed', 'Cancelled'].map((status) => (
-                  <button
-                    key={status}
-                    onClick={() => setSelectedStatusFilter(status)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium tracking-wide transition-colors cursor-pointer whitespace-nowrap ${
-                      selectedStatusFilter === status
-                        ? 'bg-[#142D26] text-white shadow-xs'
-                        : 'bg-[#F7F5F0] text-[#575757] hover:bg-black/5'
-                    }`}
-                  >
-                    {status}
-                  </button>
-                ))}
+                {['All', 'Pending', 'Confirmed', 'Checked-In', 'Completed', 'Cancelled'].map(
+                  (status) => (
+                    <button
+                      key={status}
+                      onClick={() => setSelectedStatusFilter(status)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium tracking-wide transition-colors cursor-pointer whitespace-nowrap ${
+                        selectedStatusFilter === status
+                          ? 'bg-[#142D26] text-white shadow-xs'
+                          : 'bg-[#F7F5F0] text-[#575757] hover:bg-black/5'
+                      }`}
+                    >
+                      {status}
+                    </button>
+                  )
+                )}
               </div>
             </div>
 
-            {/* Bookings List / Cards */}
+            {/* Bookings List */}
             {filteredBookings.length === 0 ? (
               <div className="text-center py-16 bg-white rounded-2xl border border-[#D5AD72]/30 p-8 space-y-3">
                 <Calendar className="w-10 h-10 text-[#D5AD72] mx-auto" />
@@ -665,7 +600,6 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                       className="bg-white rounded-2xl border border-[#D5AD72]/35 p-5 sm:p-6 shadow-xs hover:shadow-md transition-shadow"
                     >
                       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                        {/* Left Info: Ref, Guest, Room */}
                         <div className="space-y-2">
                           <div className="flex flex-wrap items-center gap-2.5">
                             <span className="font-mono text-sm font-bold text-[#142D26] bg-[#F7F5F0] px-2.5 py-1 rounded border border-[#D5AD72]/40">
@@ -695,7 +629,8 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                               <span>·</span>
                               <span className="flex items-center gap-1">
                                 <Calendar className="w-3.5 h-3.5 text-[#B88E52]" />
-                                {b.checkIn} to {b.checkOut} ({b.nights} {b.nights === 1 ? 'night' : 'nights'})
+                                {b.checkIn} to {b.checkOut} ({b.nights}{' '}
+                                {b.nights === 1 ? 'night' : 'nights'})
                               </span>
                               <span>·</span>
                               <span className="flex items-center gap-1">
@@ -748,7 +683,6 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
 
                           {/* Quick Action Buttons */}
                           <div className="flex flex-wrap items-center gap-2">
-                            {/* WhatsApp Quick Chat */}
                             <a
                               href={getWhatsAppMessage(b)}
                               target="_blank"
@@ -760,18 +694,18 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                               <span>WhatsApp</span>
                             </a>
 
-                            {/* View Receipt */}
                             <button
                               onClick={() => setActiveReceiptModal(b)}
                               className="px-3 py-1.5 rounded-lg bg-[#F7F5F0] border border-[#D5AD72]/40 text-[#142D26] text-xs font-medium hover:bg-[#142D26] hover:text-white transition-colors cursor-pointer"
                             >
-                              Details
+                              Voucher
                             </button>
 
-                            {/* Status Changer Dropdown */}
                             <select
                               value={b.status}
-                              onChange={(e) => handleStatusChange(b.bookingRef, e.target.value as any)}
+                              onChange={(e) =>
+                                handleStatusChange(b.bookingRef, e.target.value as any)
+                              }
                               className="h-8 px-2.5 rounded-lg bg-white border border-[#D5AD72]/60 text-xs font-semibold text-[#142D26] cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#D5AD72]"
                             >
                               <option value="Pending">Pending</option>
@@ -781,7 +715,6 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                               <option value="Cancelled">Cancelled</option>
                             </select>
 
-                            {/* Delete */}
                             <button
                               onClick={() => handleDeleteBooking(b.bookingRef)}
                               className="p-1.5 rounded-lg text-[#575757] hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
@@ -801,14 +734,16 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
           </div>
         )}
 
-        {/* TAB 2: ROOM INVENTORY & RATES */}
-        {activeTab === 'rooms' && (
+        {/* SECTION 2: ROOMS & SUITES */}
+        {activeSection === 'rooms' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-serif font-bold text-[#142D26]">Room Inventory & Nightly Rates</h2>
+                <h2 className="text-xl font-serif font-bold text-[#142D26]">
+                  Room Inventory & Nightly Pricing (NGN ₦)
+                </h2>
                 <p className="text-xs text-[#575757]">
-                  All prices are calibrated in Nigerian Naira (₦). Rates update live across all room cards and booking modals.
+                  All room rates synchronize across the public website and booking checkout.
                 </p>
               </div>
             </div>
@@ -909,23 +844,260 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
           </div>
         )}
 
-        {/* TAB 3: GUEST INQUIRIES */}
-        {activeTab === 'inquiries' && (
+        {/* SECTION 3: DINING & VENUES */}
+        {activeSection === 'dining' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-serif font-bold text-[#142D26]">Guest Relations & Messages</h2>
+            <div>
+              <h2 className="text-xl font-serif font-bold text-[#142D26]">
+                Culinary Venues & Gastronomy Management
+              </h2>
+              <p className="text-xs text-[#575757]">
+                Manage operating hours, dress codes, and signature dishes for hotel dining spaces.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {DINING_VENUES.map((v) => (
+                <div
+                  key={v.id}
+                  className="bg-white rounded-2xl border border-[#D5AD72]/30 p-5 space-y-4 shadow-xs"
+                >
+                  <div className="relative aspect-video rounded-xl overflow-hidden">
+                    <img src={v.imageUrl} alt={v.tabLabel} className="w-full h-full object-cover" />
+                    <div className="absolute top-2 left-2 bg-[#142D26]/90 text-white text-[11px] px-2 py-0.5 rounded font-medium">
+                      {v.kicker}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-serif font-bold text-[#142D26]">{v.tabLabel}</h3>
+                    <p className="text-xs text-[#575757] mt-1 line-clamp-2">{v.bodyPara1}</p>
+                  </div>
+
+                  <div className="space-y-1.5 text-xs text-[#242424] pt-2 border-t border-[#F7F5F0]">
+                    <div className="flex justify-between">
+                      <span className="text-[#575757]">Hours:</span>
+                      <span className="font-medium text-right text-[11px]">{v.hours}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[#575757]">Dress Code:</span>
+                      <span className="font-medium">{v.dressCode}</span>
+                    </div>
+                    <div className="pt-1">
+                      <span className="text-[#575757] block text-[11px]">Signature Creation:</span>
+                      <span className="font-semibold text-[#142D26] text-xs block">
+                        {v.signatureDish}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* SECTION 4: POOL & BAR */}
+        {activeSection === 'pool-bar' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-serif font-bold text-[#142D26]">
+                Palms Pool & Sunset Bar Controls
+              </h2>
+              <p className="text-xs text-[#575757]">
+                Manage temperature parameters, VIP cabana availability, and evening mixology sessions.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white p-6 rounded-2xl border border-[#D5AD72]/30 space-y-3 shadow-xs">
+                <span className="text-xs font-semibold uppercase tracking-wider text-[#B88E52]">
+                  Water Temperature
+                </span>
+                <div className="text-3xl font-serif font-bold text-[#142D26]">28°C / 82°F</div>
                 <p className="text-xs text-[#575757]">
-                  Inquiries received from the Contact Us form and concierge portal.
+                  Heated year-round with automated climate monitoring.
+                </p>
+                <div className="pt-2 text-xs text-emerald-700 font-medium">
+                  Status: Optimal Comfort
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl border border-[#D5AD72]/30 space-y-3 shadow-xs">
+                <span className="text-xs font-semibold uppercase tracking-wider text-[#B88E52]">
+                  Cabana Loungers
+                </span>
+                <div className="text-3xl font-serif font-bold text-[#142D26]">12 Available</div>
+                <p className="text-xs text-[#575757]">
+                  Dedicated poolside daybeds with butler call buttons.
+                </p>
+                <div className="pt-2 text-xs text-[#142D26] font-medium">
+                  Reservations via Concierge Desk
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl border border-[#D5AD72]/30 space-y-3 shadow-xs">
+                <span className="text-xs font-semibold uppercase tracking-wider text-[#B88E52]">
+                  Sunset Golden Hour
+                </span>
+                <div className="text-3xl font-serif font-bold text-[#142D26]">5:30 – 7:30 PM</div>
+                <p className="text-xs text-[#575757]">
+                  Artisan mixologist cocktails, live acoustic ambient sessions.
+                </p>
+                <div className="pt-2 text-xs text-[#B88E52] font-medium">
+                  Active Every Day
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SECTION 5: EVENTS & WEDDINGS */}
+        {activeSection === 'events' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-serif font-bold text-[#142D26]">
+                Events, Conferences & Grand Ballroom
+              </h2>
+              <p className="text-xs text-[#575757]">
+                Overview of banquet halls, corporate boardroom reservations, and catering setups.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-[#D5AD72]/30 p-6 space-y-4 shadow-xs">
+              <div className="flex items-center gap-3">
+                <PartyPopper className="w-6 h-6 text-[#D5AD72]" />
+                <h3 className="text-lg font-serif font-bold text-[#142D26]">
+                  Event Spaces Directory
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                <div className="p-4 rounded-xl bg-[#F7F5F0] border border-[#D5AD72]/20">
+                  <span className="font-bold text-[#142D26] block">The Grand Haven Ballroom</span>
+                  <span className="text-xs text-[#575757]">Capacity: Up to 350 Guests</span>
+                  <p className="text-xs text-[#242424]/80 mt-1">
+                    Crystal chandeliers, state-of-the-art acoustic sound and projection.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-[#F7F5F0] border border-[#D5AD72]/20">
+                  <span className="font-bold text-[#142D26] block">Executive Boardroom A</span>
+                  <span className="text-xs text-[#575757]">Capacity: Up to 24 Delegates</span>
+                  <p className="text-xs text-[#242424]/80 mt-1">
+                    Conference video system, ergonomic leather seating, private espresso bar.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-[#F7F5F0] border border-[#D5AD72]/20">
+                  <span className="font-bold text-[#142D26] block">The Garden Courtyard</span>
+                  <span className="text-xs text-[#575757]">Capacity: Up to 180 Guests</span>
+                  <p className="text-xs text-[#242424]/80 mt-1">
+                    Open-air cocktail soirees, wedding receptions, and sunset ceremonies.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SECTION 6: OFFERS & PACKAGES */}
+        {activeSection === 'offers' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-serif font-bold text-[#142D26]">
+                Direct Booking Privileges & Seasonal Offers
+              </h2>
+              <p className="text-xs text-[#575757]">
+                Manage promotional packages shown to prospective guests on the Offers page.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white p-5 rounded-2xl border border-[#D5AD72]/30 space-y-2 shadow-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold uppercase text-[#B88E52]">Direct Privilege</span>
+                  <span className="text-[11px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold">
+                    Live
+                  </span>
+                </div>
+                <h4 className="text-base font-serif font-bold text-[#142D26]">
+                  Complimentary Artisan Breakfast
+                </h4>
+                <p className="text-xs text-[#575757]">
+                  Served daily for all direct website bookings in Deluxe King & Suites.
                 </p>
               </div>
+
+              <div className="bg-white p-5 rounded-2xl border border-[#D5AD72]/30 space-y-2 shadow-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold uppercase text-[#B88E52]">Weekend Special</span>
+                  <span className="text-[11px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold">
+                    Live
+                  </span>
+                </div>
+                <h4 className="text-base font-serif font-bold text-[#142D26]">
+                  Extended Sunday Late Check-Out (3:00 PM)
+                </h4>
+                <p className="text-xs text-[#575757]">
+                  Guaranteed late check-out on all Friday-to-Sunday stays.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SECTION 7: VISUAL GALLERY */}
+        {activeSection === 'gallery' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-serif font-bold text-[#142D26]">
+                Visual Media & Photography Asset Manager
+              </h2>
+              <p className="text-xs text-[#575757]">
+                High-resolution architectural, suite, and lifestyle imagery displayed across HavenStay.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { title: 'Deluxe King Suite', url: '/images/hotel/deluxe-1.jpg' },
+                { title: 'Executive Living Room', url: '/images/hotel/executive-suite-1.jpg' },
+                { title: 'Penthouse Master', url: '/images/hotel/presidential-1.jpg' },
+                { title: 'Sunset Lap Pool', url: '/videos/swimming-pool.jpg' },
+              ].map((item, idx) => (
+                <div
+                  key={idx}
+                  className="relative aspect-[4/3] rounded-xl overflow-hidden border border-[#D5AD72]/30 shadow-xs group"
+                >
+                  <img src={item.url} alt={item.title} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end p-3">
+                    <span className="text-xs font-semibold text-white">{item.title}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* SECTION 8: CONTACT INQUIRIES */}
+        {activeSection === 'inquiries' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-serif font-bold text-[#142D26]">
+                Guest Inquiries & Messages
+              </h2>
+              <p className="text-xs text-[#575757]">
+                Messages submitted through the public website contact form.
+              </p>
             </div>
 
             {contacts.length === 0 ? (
               <div className="text-center py-16 bg-white rounded-2xl border border-[#D5AD72]/30 p-8 space-y-2">
                 <Mail className="w-10 h-10 text-[#D5AD72] mx-auto" />
                 <h3 className="text-lg font-serif font-bold text-[#142D26]">No inquiries logged</h3>
-                <p className="text-xs text-[#575757]">New messages from website visitors will appear here.</p>
+                <p className="text-xs text-[#575757]">
+                  New inquiries from visitors will appear here.
+                </p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -962,7 +1134,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                           href={`mailto:${c.email}`}
                           className="px-3 py-1.5 rounded-lg bg-[#142D26] text-white text-xs font-medium hover:bg-black"
                         >
-                          Email Reply
+                          Email
                         </a>
                         <button
                           onClick={() => handleDeleteContact(c.id)}
@@ -985,8 +1157,8 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
           </div>
         )}
 
-        {/* TAB 4: GOOGLE SHEETS SYNC */}
-        {activeTab === 'sync' && (
+        {/* SECTION 9: WEBSITE & GOOGLE SHEETS SYNC */}
+        {activeSection === 'website' && (
           <div className="space-y-6">
             <div className="bg-white rounded-2xl border border-[#D5AD72]/40 p-6 sm:p-8 shadow-xs space-y-6">
               <div className="flex items-start gap-4">
@@ -998,7 +1170,8 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                     Google Sheets & Apps Script Integration
                   </h3>
                   <p className="text-xs sm:text-sm text-[#575757]">
-                    HavenStay Hotels connects with your Google Spreadsheet to back up confirmed bookings, contacts, and newsletter subscribers.
+                    HavenStay Hotels connects with your Google Spreadsheet to back up confirmed
+                    bookings, contacts, and newsletter subscribers.
                   </p>
                 </div>
               </div>
@@ -1006,8 +1179,12 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
               {/* Endpoint Status Box */}
               <div className="p-4 rounded-xl bg-[#F7F5F0] border border-[#D5AD72]/30 space-y-3">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="font-semibold text-[#142D26]">Deployed Apps Script Web App URL:</span>
-                  <span className="text-[11px] text-emerald-700 font-medium">Configured in production</span>
+                  <span className="font-semibold text-[#142D26]">
+                    Deployed Apps Script Web App URL:
+                  </span>
+                  <span className="text-[11px] text-emerald-700 font-medium">
+                    Configured in production
+                  </span>
                 </div>
                 <div className="p-2.5 rounded bg-white border border-[#D5AD72]/20 font-mono text-xs text-[#142D26] break-all">
                   {APPS_SCRIPT_URL}
@@ -1015,7 +1192,9 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
 
                 <div className="flex justify-between items-center text-xs pt-1">
                   <span className="font-semibold text-[#142D26]">Spreadsheet ID:</span>
-                  <span className="font-mono text-xs text-[#575757]">1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqplHM</span>
+                  <span className="font-mono text-xs text-[#575757]">
+                    1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqplHM
+                  </span>
                 </div>
               </div>
 
@@ -1027,7 +1206,9 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#142D26] text-white text-xs sm:text-sm font-semibold hover:bg-black transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   <RefreshCw className={`w-4 h-4 ${pingLoading ? 'animate-spin' : ''}`} />
-                  <span>{pingLoading ? 'Testing Live Connection...' : 'Test Live Endpoint Connection'}</span>
+                  <span>
+                    {pingLoading ? 'Testing Live Connection...' : 'Test Live Endpoint Connection'}
+                  </span>
                 </button>
 
                 <a
@@ -1071,6 +1252,224 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                   </div>
                 </div>
               )}
+
+              {/* Screenshot Diagnosis & Fix Card */}
+              <div className="p-5 rounded-xl bg-gradient-to-br from-[#F7F5F0] to-white border border-[#D5AD72]/40 space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-[#D5AD72]/20 text-[#142D26] shrink-0 mt-0.5">
+                    <FileSpreadsheet className="w-5 h-5 text-[#B88E52]" />
+                  </div>
+                  <div>
+                    <h4 className="font-serif font-bold text-[#142D26] text-sm sm:text-base">
+                      Important: Why reservations were not appearing in your Google Spreadsheet
+                    </h4>
+                    <p className="text-xs text-[#575757] mt-1 leading-relaxed">
+                      In your spreadsheet screenshot, your document only contains two default blank tabs: <strong className="text-[#142D26]">Sheet1</strong> and <strong className="text-[#142D26]">Sheet2</strong>. The Google Apps Script expects a sheet named <strong className="text-[#142D26]">"Bookings"</strong> to write reservation rows into.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                  <div className="p-3.5 rounded-lg bg-white border border-[#D5AD72]/30 space-y-1.5">
+                    <span className="text-xs font-bold text-[#142D26] block">Method 1: Rename "Sheet1" tab</span>
+                    <p className="text-[11px] text-[#575757] leading-relaxed">
+                      In your Google Sheet at the bottom left, double click <strong className="text-[#142D26]">"Sheet1"</strong> and rename it to <strong className="text-[#142D26]">"Bookings"</strong>.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-lg bg-white border border-[#D5AD72]/30 space-y-1.5">
+                    <span className="text-xs font-bold text-[#142D26] block">Method 2: Use Self-Healing Apps Script</span>
+                    <p className="text-[11px] text-[#575757] leading-relaxed">
+                      Copy the complete script below into your Apps Script editor. It will automatically create all missing sheets with headers!
+                    </p>
+                  </div>
+                </div>
+
+                {/* Copyable Script Action */}
+                <div className="pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#142D26] p-4 rounded-xl text-white">
+                  <div>
+                    <span className="text-xs font-semibold block text-[#D5AD72]">Complete Self-Healing Apps Script Code</span>
+                    <span className="text-[11px] text-white/70">Includes auto-sheet creation, headers, GET & POST booking handlers</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const fullCode = `const SPREADSHEET_ID = '1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqplHM';
+const HOTEL_EMAIL = 'egutudanny6@gmail.com';
+
+function getSpreadsheet_() {
+  return SpreadsheetApp.openById(SPREADSHEET_ID);
+}
+
+function getOrCreateSheet_(ss, sheetName, headers) {
+  let sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+    if (headers && headers.length > 0) {
+      sheet.appendRow(headers);
+      sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#142D26').setFontColor('#FFFFFF');
+      sheet.setFrozenRows(1);
+    }
+  }
+  return sheet;
+}
+
+function setup() {
+  const ss = getSpreadsheet_();
+  getOrCreateSheet_(ss, 'Bookings', [
+    'Booking Reference', 'Date Created', 'Room ID', 'Room Name',
+    'Check-In', 'Check-Out', 'Nights', 'Adults', 'Children',
+    'Price Per Night (NGN)', 'Total Amount (NGN)', 'Guest Full Name',
+    'Guest Email', 'Guest Phone', 'Payment Preference', 'Special Requests', 'Status'
+  ]);
+  getOrCreateSheet_(ss, 'Rooms', [
+    'Room ID', 'Room Name', 'Type', 'Price Per Night (NGN)',
+    'Max Guests', 'Bed Type', 'Room Size', 'Active', 'Description', 'Amenities', 'Image URL'
+  ]);
+  getOrCreateSheet_(ss, 'Contacts', ['Date', 'Name', 'Email', 'Phone', 'Message', 'Status']);
+  getOrCreateSheet_(ss, 'Newsletter', ['Date', 'Email']);
+  return 'Setup completed successfully! Tabs Bookings, Rooms, Contacts, and Newsletter created.';
+}
+
+function doGet(e) {
+  try {
+    const action = e && e.parameter ? e.parameter.action : '';
+    if (action === 'rooms') return json_(getRooms_());
+    if (action === 'availability') {
+      return json_(isAvailable_(e.parameter.roomId, e.parameter.checkIn, e.parameter.checkOut));
+    }
+    if (action === 'book') {
+      return json_(saveBooking_(e.parameter));
+    }
+    return json_({ ok: true, hotel: 'HavenStay Hotels', timestamp: new Date().toISOString() });
+  } catch (err) {
+    return json_({ ok: false, error: err.toString() });
+  }
+}
+
+function doPost(e) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(20000);
+    const data = JSON.parse(e.postData.contents);
+    if (data.type === 'contact') return json_(saveContact_(data));
+    if (data.type === 'newsletter') return json_(saveNewsletter_(data));
+    return json_(saveBooking_(data));
+  } catch (err) {
+    return json_({ success: false, message: 'Server error: ' + err.toString() });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function getRooms_() {
+  const ss = getSpreadsheet_();
+  const sheet = ss.getSheetByName('Rooms');
+  if (!sheet) return [];
+  const rows = sheet.getDataRange().getValues();
+  if (rows.length <= 1) return [];
+  const headers = rows[0];
+  return rows.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = row[i]; });
+    return obj;
+  });
+}
+
+function isAvailable_(roomId, checkIn, checkOut) {
+  const ss = getSpreadsheet_();
+  const sheet = ss.getSheetByName('Bookings');
+  if (!sheet) return { available: true };
+  const rows = sheet.getDataRange().getValues();
+  if (rows.length <= 1) return { available: true };
+  const ci = new Date(checkIn), co = new Date(checkOut);
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (String(row[2]) === String(roomId)) {
+      const bci = new Date(row[4]), bco = new Date(row[5]);
+      if (ci < bco && co > bci) return { available: false, message: 'Room already booked for those dates.' };
+    }
+  }
+  return { available: true };
+}
+
+function saveBooking_(d) {
+  const required = ['roomId', 'checkIn', 'checkOut', 'adults', 'fullName', 'email', 'phone'];
+  for (const k of required) {
+    if (!d[k]) return { success: false, message: 'Missing field: ' + k };
+  }
+  const ss = getSpreadsheet_();
+  const sheet = getOrCreateSheet_(ss, 'Bookings', [
+    'Booking Reference', 'Date Created', 'Room ID', 'Room Name',
+    'Check-In', 'Check-Out', 'Nights', 'Adults', 'Children',
+    'Price Per Night (NGN)', 'Total Amount (NGN)', 'Guest Full Name',
+    'Guest Email', 'Guest Phone', 'Payment Preference', 'Special Requests', 'Status'
+  ]);
+
+  const ci = new Date(d.checkIn), co = new Date(d.checkOut);
+  const nights = Math.max(1, Math.round((co - ci) / 86400000));
+  const price = Number(d.pricePerNight) || 165000;
+  const total = nights * price;
+  const ref = 'HS-' + Utilities.getUuid().slice(0, 6).toUpperCase();
+
+  sheet.appendRow([
+    ref,
+    new Date(),
+    d.roomId,
+    d.roomName || 'HavenStay Luxury Room',
+    d.checkIn,
+    d.checkOut,
+    nights,
+    Number(d.adults) || 1,
+    Number(d.children) || 0,
+    price,
+    total,
+    d.fullName,
+    d.email,
+    d.phone,
+    d.paymentPref || 'Pay at hotel',
+    d.requests || '',
+    'Confirmed'
+  ]);
+
+  return {
+    success: true,
+    bookingRef: ref,
+    nights: nights,
+    total: total,
+    message: 'Booking confirmed!'
+  };
+}
+
+function saveContact_(d) {
+  const ss = getSpreadsheet_();
+  const sheet = getOrCreateSheet_(ss, 'Contacts', ['Date', 'Name', 'Email', 'Phone', 'Message', 'Status']);
+  sheet.appendRow([new Date(), d.name, d.email, d.phone, d.message, 'New']);
+  return { success: true };
+}
+
+function saveNewsletter_(d) {
+  const ss = getSpreadsheet_();
+  const sheet = getOrCreateSheet_(ss, 'Newsletter', ['Date', 'Email']);
+  sheet.appendRow([new Date(), d.email]);
+  return { success: true };
+}
+
+function json_(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}`;
+                      navigator.clipboard.writeText(fullCode);
+                      setCopiedScript(true);
+                      showToast('Self-healing Apps Script copied to clipboard!', 'success');
+                      setTimeout(() => setCopiedScript(false), 3000);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#D5AD72] text-[#142D26] text-xs font-bold hover:bg-[#e0bb82] transition-colors shrink-0 cursor-pointer"
+                  >
+                    {copiedScript ? <Check className="w-4 h-4 text-emerald-800" /> : <Copy className="w-4 h-4" />}
+                    <span>{copiedScript ? 'Copied to Clipboard!' : 'Copy Script Code'}</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -1094,7 +1493,6 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
               exit={{ opacity: 0, scale: 0.95 }}
               className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-[#D5AD72]/40 z-10 overflow-hidden my-6"
             >
-              {/* Header */}
               <div className="flex items-center justify-between px-6 py-4 bg-[#142D26] text-white">
                 <div>
                   <h3
@@ -1116,16 +1514,19 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                 </button>
               </div>
 
-              {/* Receipt Body */}
               <div className="p-6 space-y-4 text-xs sm:text-sm">
                 <div className="grid grid-cols-2 gap-3 pb-3 border-b border-[#F7F5F0]">
                   <div>
                     <span className="text-xs text-[#575757] block">Guest Name</span>
-                    <span className="font-bold text-[#142D26] text-base">{activeReceiptModal.fullName}</span>
+                    <span className="font-bold text-[#142D26] text-base">
+                      {activeReceiptModal.fullName}
+                    </span>
                   </div>
                   <div>
                     <span className="text-xs text-[#575757] block">Status</span>
-                    <span className="font-semibold text-emerald-700">{activeReceiptModal.status}</span>
+                    <span className="font-semibold text-emerald-700">
+                      {activeReceiptModal.status}
+                    </span>
                   </div>
                 </div>
 
@@ -1140,7 +1541,9 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#575757]">Reserved Suite</span>
-                    <span className="font-medium text-[#142D26]">{activeReceiptModal.roomName}</span>
+                    <span className="font-medium text-[#142D26]">
+                      {activeReceiptModal.roomName}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#575757]">Check-In</span>
@@ -1148,7 +1551,9 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#575757]">Check-Out</span>
-                    <span className="font-medium text-[#142D26]">{activeReceiptModal.checkOut}</span>
+                    <span className="font-medium text-[#142D26]">
+                      {activeReceiptModal.checkOut}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#575757]">Duration</span>
@@ -1157,25 +1562,27 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#575757]">Guests</span>
+                    <span className="text-[#575757]">Nightly Rate</span>
                     <span className="font-medium text-[#142D26]">
-                      {activeReceiptModal.adults} Adults{activeReceiptModal.children ? `, ${activeReceiptModal.children} Children` : ''}
+                      {formatNaira(activeReceiptModal.pricePerNight)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#575757]">Nightly Rate</span>
-                    <span className="font-medium text-[#142D26]">{formatNaira(activeReceiptModal.pricePerNight)}</span>
-                  </div>
-                  <div className="flex justify-between">
                     <span className="text-[#575757]">Payment Preference</span>
-                    <span className="font-medium text-[#B88E52]">{activeReceiptModal.paymentPref}</span>
+                    <span className="font-medium text-[#B88E52]">
+                      {activeReceiptModal.paymentPref}
+                    </span>
                   </div>
                 </div>
 
                 {activeReceiptModal.requests && (
                   <div className="p-3 rounded-lg bg-[#F7F5F0] border border-[#D5AD72]/20">
-                    <span className="text-xs font-semibold text-[#142D26] block">Special Requests</span>
-                    <p className="text-xs text-[#575757] mt-0.5">{activeReceiptModal.requests}</p>
+                    <span className="text-xs font-semibold text-[#142D26] block">
+                      Special Requests
+                    </span>
+                    <p className="text-xs text-[#575757] mt-0.5">
+                      {activeReceiptModal.requests}
+                    </p>
                   </div>
                 )}
 
@@ -1204,7 +1611,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                     className="px-4 py-2.5 rounded-lg bg-[#F7F5F0] border border-[#D5AD72]/50 text-[#142D26] text-xs font-semibold flex items-center gap-1.5 hover:bg-[#ECE8DE]"
                   >
                     <Printer className="w-4 h-4" />
-                    <span>Print</span>
+                    <span>Print Voucher</span>
                   </button>
                 </div>
               </div>
