@@ -12,6 +12,7 @@ interface DatePickerFieldProps {
   error?: string;
   helperText?: string;
   className?: string;
+  displayText?: string;
 }
 
 const MONTH_NAMES = [
@@ -88,6 +89,7 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
   error,
   helperText,
   className = '',
+  displayText,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -222,6 +224,7 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
         onClick={() => setIsOpen((prev) => !prev)}
         aria-haspopup="dialog"
         aria-expanded={isOpen}
+        title={value ? `Selected: ${formatHumanDate(value)}` : 'Select date'}
         className={`w-full min-h-[46px] px-3.5 py-2.5 rounded-lg text-left transition-all flex items-center justify-between border cursor-pointer ${
           isOpen
             ? 'bg-white border-[#D5AD72] ring-2 ring-[#D5AD72]/40 shadow-xs'
@@ -233,8 +236,8 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
         <div className="flex items-center gap-2.5 min-w-0 pr-2">
           <CalendarIcon className="w-4 h-4 text-[#B88E52] shrink-0" />
           <div className="flex flex-col truncate">
-            <span className={`text-xs sm:text-sm font-medium truncate ${value ? 'text-[#142D26]' : 'text-stone-400'}`}>
-              {formattedDisplay}
+            <span className={`text-xs sm:text-sm font-medium truncate ${value || displayText ? 'text-[#142D26]' : 'text-stone-400'}`}>
+              {displayText || formattedDisplay}
             </span>
           </div>
         </div>

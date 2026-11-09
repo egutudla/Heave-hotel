@@ -152,20 +152,24 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             {/* Check-In Date Field */}
             <div className="lg:col-span-3">
               <DatePickerField
+                id="search-checkin"
                 label="Check-in Date"
                 value={checkIn}
                 onChange={handleCheckInChange}
                 minDate={todayStr}
+                displayText="Dates"
               />
             </div>
 
             {/* Check-Out Date Field */}
             <div className="lg:col-span-3">
               <DatePickerField
+                id="search-checkout"
                 label="Check-out Date"
                 value={checkOut}
                 onChange={handleCheckOutChange}
                 minDate={minCheckOutDate}
+                displayText="Dates"
               />
             </div>
 
@@ -229,7 +233,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                 className="min-h-[46px] shadow-sm hover:shadow-md"
                 icon={<ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />}
               >
-                Search Stays
+                Booking
               </Button>
             </div>
           </div>
