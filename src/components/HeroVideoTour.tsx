@@ -70,11 +70,11 @@ export const HeroVideoTour: React.FC<HeroVideoTourProps> = ({ onSceneChange }) =
 
   const currentScene = HOTEL_SCENES[currentSceneIndex];
 
-  // Auto-cycle steadily through hotel spaces every 11 seconds
+  // Auto-cycle steadily through hotel spaces every 20 seconds (calm, unhurried pace)
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSceneIndex((prev) => (prev + 1) % HOTEL_SCENES.length);
-    }, 11000);
+    }, 20000);
     return () => clearInterval(timer);
   }, []);
 
@@ -98,7 +98,7 @@ export const HeroVideoTour: React.FC<HeroVideoTourProps> = ({ onSceneChange }) =
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 1.6, ease: 'easeInOut' }}
+          transition={{ duration: 2.8, ease: 'easeInOut' }}
           className="absolute inset-0 w-full h-full transform-gpu"
         >
           {/* Steady Poster Image Underneath Video to Prevent Flashes */}
@@ -108,7 +108,7 @@ export const HeroVideoTour: React.FC<HeroVideoTourProps> = ({ onSceneChange }) =
             className="absolute inset-0 w-full h-full object-cover filter brightness-85 transform-gpu"
           />
 
-          {/* Autoplaying Silent Video Loop */}
+          {/* Autoplaying Silent Video Loop with Gentle 0.75x Playback Rate */}
           <video
             key={currentScene.videoUrl}
             autoPlay
@@ -116,6 +116,12 @@ export const HeroVideoTour: React.FC<HeroVideoTourProps> = ({ onSceneChange }) =
             muted
             playsInline
             poster={currentScene.posterUrl}
+            onLoadedMetadata={(e) => {
+              e.currentTarget.playbackRate = 0.75;
+            }}
+            onPlay={(e) => {
+              e.currentTarget.playbackRate = 0.75;
+            }}
             className="absolute inset-0 w-full h-full object-cover filter brightness-85 transform-gpu"
           >
             <source src={currentScene.videoUrl} type="video/mp4" />

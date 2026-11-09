@@ -6,7 +6,7 @@ import { Room, BookingFormData, BookingResult } from '../types';
  * If empty or unreachable, the application falls back gracefully to local luxury mock data.
  */
 export const API_URL =
-  (import.meta.env.VITE_API_URL as string) ||
+  (import.meta.env?.VITE_API_URL as string) ||
   'https://script.google.com/macros/s/AKfycbzqG6y5pbnm59u-7j0FGZX35rezq_nhmxEECXVAhYLNxNEILaar_VZfJgdUX-YN5SDa/exec';
 
 export const APPS_SCRIPT_URL = API_URL;
@@ -22,7 +22,7 @@ export const MOCK_ROOMS: Room[] = [
     Type: 'Deluxe',
     PricePerNight: 80000,
     MaxGuests: 3,
-    Amenities: 'High-speed Wi-Fi, Air conditioning, California king bed, En-suite rainfall shower, Smart TV, City view',
+    Amenities: 'High-speed Wi-Fi, Air conditioning, King-size bed, En-suite rainfall shower, Smart 4K TV, City view, Executive desk',
     ImageURL: '/images/hotel/deluxe-1.jpg',
     AdditionalImages: [
       '/images/hotel/deluxe-1.jpg',
@@ -30,7 +30,7 @@ export const MOCK_ROOMS: Room[] = [
       '/images/hotel/executive-suite-1.jpg',
     ],
     Description:
-      'A serene and spacious room designed for restful stays. Features a California king-size bed with crisp cotton linens, a dedicated work area, an en-suite rainfall shower, and natural light from large sound-insulated windows.',
+      'A serene and spacious room designed for restful stays in Victoria Island. Features a California king-size bed with crisp cotton linens, a dedicated work area, an en-suite rainfall shower, and natural light from large sound-insulated windows with city views.',
     BedType: '1 California King Bed',
     RoomSize: '38 m² / 409 sq ft',
     Active: true,
@@ -42,7 +42,7 @@ export const MOCK_ROOMS: Room[] = [
     Type: 'Executive Suite',
     PricePerNight: 140000,
     MaxGuests: 4,
-    Amenities: 'High-speed Wi-Fi, Air conditioning, Separate living lounge, Deep soaking tub, Nespresso bar, Work desk',
+    Amenities: 'High-speed Wi-Fi, Air conditioning, King-size bed, Separate living lounge, Deep soaking bathtub, Nespresso bar, City view, Dedicated workspace',
     ImageURL: '/images/hotel/executive-suite-1.jpg',
     AdditionalImages: [
       '/images/hotel/executive-suite-1.jpg',
@@ -50,7 +50,7 @@ export const MOCK_ROOMS: Room[] = [
       '/images/hotel/pool-4.jpg',
     ],
     Description:
-      'Crafted for discerning travellers and business executives. This suite provides a tranquil living room separated from the primary master bedroom, a marble bathroom with soaking tub, and dedicated workspace.',
+      'Crafted for discerning travellers and business executives. This suite provides a tranquil living room separated from the primary master bedroom, a marble bathroom with deep soaking bathtub, city view, and dedicated workspace.',
     BedType: '1 King Bed + 1 Daybed',
     RoomSize: '54 m² / 581 sq ft',
     Active: true,
@@ -62,7 +62,7 @@ export const MOCK_ROOMS: Room[] = [
     Type: 'Penthouse',
     PricePerNight: 395000,
     MaxGuests: 4,
-    Amenities: 'Wi-Fi, Air conditioning, Panoramic private terrace, Butler service, Marble bathroom, Freestanding tub',
+    Amenities: 'High-speed Wi-Fi, Air conditioning, King-size bed, Panoramic private balcony & terrace, Butler service, Marble bathroom with freestanding bathtub, City view',
     ImageURL: '/images/hotel/presidential-1.jpg',
     AdditionalImages: [
       '/images/hotel/presidential-1.jpg',
@@ -70,7 +70,7 @@ export const MOCK_ROOMS: Room[] = [
       '/images/hotel/pool-1.jpg',
     ],
     Description:
-      'Our crowning achievement in boutique hospitality. Perched on the top floor with private elevator access, the Premier Penthouse boasts an expansive outdoor terrace, dining salon for four, and personalised 24-hour concierge assistance.',
+      'Our crowning achievement in boutique hospitality. Perched on the top floor with private elevator access, the Premier Penthouse boasts an expansive outdoor terrace balcony, dining salon for four, freestanding bathtub, and personalised 24-hour concierge assistance.',
     BedType: '2 King Beds',
     RoomSize: '82 m² / 882 sq ft',
     Active: true,
@@ -82,14 +82,15 @@ export const MOCK_ROOMS: Room[] = [
     Type: 'Superior',
     PricePerNight: 145000,
     MaxGuests: 2,
-    Amenities: 'Wi-Fi, Air conditioning, Plush queen bed, Designer desk, Walk-in shower, Artisanal tea selection',
+    Amenities: 'High-speed Wi-Fi, Air conditioning, Plush queen bed, Designer desk, Walk-in rain shower, City view, Artisanal tea bar',
     ImageURL: '/images/hotel/deluxe-1.jpg',
     AdditionalImages: [
-      'https://images.unsplash.com/photo-1591088398332-8a7791972843?auto=format&fit=crop&w=1000&q=80',
-      'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=1000&q=80',
+      '/images/hotel/deluxe-1.jpg',
+      '/images/hotel/executive-suite-1.jpg',
+      '/images/hotel/restaurant-1.jpg',
     ],
     Description:
-      'Impeccably tailored for restful solo travel or couples. Featuring serene acoustic insulation, a plush queen bed with down pillows, ergonomic work area, and an invigorating rainfall shower.',
+      'Impeccably tailored for restful solo travel or couples. Featuring serene acoustic insulation, a plush queen bed with down pillows, ergonomic work area, city views, and an invigorating rainfall shower.',
     BedType: '1 Queen Bed',
     RoomSize: '32 m² / 344 sq ft',
     Active: true,
@@ -101,7 +102,7 @@ export const MOCK_ROOMS: Room[] = [
     Type: 'Family Suite',
     PricePerNight: 285000,
     MaxGuests: 5,
-    Amenities: 'Wi-Fi, Air conditioning, Two separate bedrooms, Kitchenette, Garden view patio, Double vanities',
+    Amenities: 'High-speed Wi-Fi, Air conditioning, King-size bed, Two separate bedrooms, Kitchenette with refrigerator, Garden view patio balcony, Double vanities, Bathtub',
     ImageURL: '/images/hotel/executive-suite-1.jpg',
     AdditionalImages: [
       '/images/hotel/executive-suite-1.jpg',
@@ -109,7 +110,7 @@ export const MOCK_ROOMS: Room[] = [
       '/images/hotel/deluxe-1.jpg',
     ],
     Description:
-      'Generously proportioned for family comfort without sacrificing luxury. Features two private sleeping quarters, a child-friendly lounge space, kitchenette with refrigerator, and direct ground-level access to the courtyard gardens.',
+      'Generously proportioned for family comfort without sacrificing luxury. Features two private sleeping quarters, a child-friendly lounge space, kitchenette with refrigerator, soaking bathtub, and direct ground-level access to a garden view patio balcony.',
     BedType: '1 King Bed + 2 Twin Beds',
     RoomSize: '68 m² / 731 sq ft',
     Active: true,
@@ -121,7 +122,7 @@ export const MOCK_ROOMS: Room[] = [
     Type: 'Classic',
     PricePerNight: 125000,
     MaxGuests: 2,
-    Amenities: 'Wi-Fi, Air conditioning, Cozy seating nook, Luxury bath amenities, High-thread-count linens',
+    Amenities: 'High-speed Wi-Fi, Air conditioning, Cozy seating nook, Luxury bath amenities, High-thread-count linens, Walk-in shower',
     ImageURL: '/images/hotel/deluxe-1.jpg',
     AdditionalImages: [
       '/images/hotel/deluxe-1.jpg',
@@ -129,7 +130,7 @@ export const MOCK_ROOMS: Room[] = [
       '/images/hotel/restaurant-1.jpg',
     ],
     Description:
-      'Warm tones and intimate comfort define this sanctuary. Perfect for brief city respites or weekend retreats, complete with premium audio sound system and luxury organic toiletries.',
+      'Warm tones and intimate comfort define this sanctuary. Perfect for brief city respites or weekend retreats, complete with premium audio sound system, work desk, and luxury organic toiletries.',
     BedType: '1 Double Bed',
     RoomSize: '28 m² / 301 sq ft',
     Active: true,

@@ -9,6 +9,10 @@ import {
   Receipt,
   ArrowRight,
   Info,
+  ChevronDown,
+  ChevronUp,
+  Printer,
+  Calendar,
 } from 'lucide-react';
 import { Room, SearchParams, BookingFormData, BookingResult } from '../types';
 import { submitBooking, checkRoomAvailability } from '../config/api';
@@ -67,6 +71,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [confirmedResult, setConfirmedResult] = useState<BookingResult | null>(null);
+  const [showRateDetails, setShowRateDetails] = useState<boolean>(false);
 
   // Sync selectedRoom when prop changes
   useEffect(() => {
@@ -249,7 +254,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         initial={{ opacity: 0, scale: 0.96, y: 16 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 16 }}
-        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
         className="relative w-full max-w-4xl bg-white rounded-2xl shadow-[0_24px_60px_rgba(20,45,38,0.25)] border border-[#D5AD72]/40 z-10 overflow-hidden my-4 sm:my-8 flex flex-col max-h-[92vh]"
       >
         {/* Header */}
@@ -274,9 +279,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
           </button>
         </div>
 
-        {/* Success Confirmation View */}
+        {/* Success Confirmation View - Complete Official Itemized Receipt */}
         {confirmedResult ? (
-          <div className="p-8 sm:p-12 text-center space-y-6 overflow-y-auto">
+          <div className="p-6 sm:p-10 text-center space-y-6 overflow-y-auto">
             <div className="w-16 h-16 mx-auto rounded-full bg-[#142D26] flex items-center justify-center text-[#D5AD72] shadow-md">
               <CheckCircle className="w-9 h-9" />
             </div>
@@ -291,63 +296,137 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               >
                 Thank you, {fullName.split(' ')[0] || 'Guest'}
               </h2>
-              <p className="text-sm text-[#575757] max-w-lg mx-auto mt-2 leading-relaxed">
-                Your reservation has been recorded in our hotel system. A concierge member will review your itinerary and contact you shortly.
+              <p className="text-xs sm:text-sm text-[#575757] max-w-lg mx-auto mt-2 leading-relaxed">
+                Your reservation has been confirmed and recorded in our hotel database. Below is your official reservation receipt and summary breakdown.
               </p>
             </div>
 
-            {/* Reference & Summary Card */}
-            <div className="bg-[#F7F5F0] border border-[#D5AD72]/40 rounded-xl p-5 max-w-md mx-auto text-left space-y-3">
-              <div>
-                <span className="text-[11px] uppercase tracking-wider text-[#575757] block">
-                  Booking Reference Number
-                </span>
-                <span className="text-2xl font-mono font-bold text-[#142D26] tracking-wider block mt-0.5">
-                  {confirmedResult.bookingRef}
-                </span>
-              </div>
-
-              <div className="pt-3 border-t border-[#D5AD72]/20 space-y-2 text-xs text-[#242424]">
-                <div className="flex justify-between">
-                  <span className="text-[#575757]">Accommodation</span>
-                  <span className="font-semibold text-[#142D26]">{currentRoom?.Name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#575757]">Check-in</span>
-                  <span className="font-semibold text-[#142D26]">{formatHumanDate(checkIn)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#575757]">Check-out</span>
-                  <span className="font-semibold text-[#142D26]">{formatHumanDate(checkOut)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#575757]">Duration & Rooms</span>
-                  <span className="font-semibold text-[#142D26]">
-                    {nights} {nights === 1 ? 'Night' : 'Nights'} · {safeRoomsCount} {safeRoomsCount === 1 ? 'Room' : 'Rooms'}
+            {/* Complete Official Reservation Breakdown & Receipt Voucher */}
+            <div className="bg-[#F7F5F0] border border-[#D5AD72]/40 rounded-2xl p-6 max-w-xl mx-auto text-left space-y-4 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-[#D5AD72]/20">
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider text-[#575757] block">
+                    Booking Reference
+                  </span>
+                  <span className="text-xl sm:text-2xl font-mono font-bold text-[#142D26] tracking-wider block mt-0.5">
+                    {confirmedResult.bookingRef}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#575757]">Guests</span>
+                <div className="text-left sm:text-right">
+                  <span className="text-[10px] uppercase tracking-wider text-[#575757] block">
+                    Reservation Status
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold mt-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                    Confirmed Request
+                  </span>
+                </div>
+              </div>
+
+              {/* Itemized Line-by-Line Breakdown */}
+              <div className="space-y-2.5 text-xs text-[#242424]">
+                <div className="flex justify-between py-1">
+                  <span className="text-[#575757]">Accommodation</span>
+                  <span className="font-bold text-[#142D26] text-right">{currentRoom?.Name} ({currentRoom?.Type})</span>
+                </div>
+
+                <div className="flex justify-between py-1">
+                  <span className="text-[#575757]">Check-in Date</span>
+                  <span className="font-medium text-[#142D26]">{formatHumanDate(checkIn)}</span>
+                </div>
+
+                <div className="flex justify-between py-1">
+                  <span className="text-[#575757]">Check-out Date</span>
+                  <span className="font-medium text-[#142D26]">{formatHumanDate(checkOut)}</span>
+                </div>
+
+                <div className="flex justify-between py-1">
+                  <span className="text-[#575757]">Length of Stay</span>
                   <span className="font-semibold text-[#142D26]">
+                    {nights} {nights === 1 ? 'Night' : 'Nights'}
+                  </span>
+                </div>
+
+                <div className="flex justify-between py-1">
+                  <span className="text-[#575757]">Number of Rooms</span>
+                  <span className="font-semibold text-[#142D26]">
+                    {safeRoomsCount} {safeRoomsCount === 1 ? 'Room' : 'Rooms'}
+                  </span>
+                </div>
+
+                <div className="flex justify-between py-1">
+                  <span className="text-[#575757]">Registered Guests</span>
+                  <span className="font-medium text-[#142D26]">
                     {adults} Adult{adults > 1 ? 's' : ''}{children > 0 ? `, ${children} Child${children > 1 ? 'ren' : ''}` : ''}
                   </span>
                 </div>
-                <div className="flex justify-between pt-2 border-t border-[#D5AD72]/20 items-baseline">
-                  <span className="text-sm font-semibold text-[#142D26]">Total Amount</span>
-                  <span className="text-lg font-serif font-bold text-[#142D26]">
-                    {formatNaira(confirmedResult.total || totalPrice)}
+
+                <div className="flex justify-between py-1 pt-2.5 border-t border-[#D5AD72]/20">
+                  <span className="text-[#575757]">Nightly Rate (per room)</span>
+                  <span className="font-semibold text-[#142D26]">{formatNaira(pricePerNight)}</span>
+                </div>
+
+                <div className="flex justify-between py-1">
+                  <span className="text-[#575757]">
+                    Room Subtotal ({safeRoomsCount} rm × {nights} nt)
                   </span>
+                  <span className="font-semibold text-[#142D26]">{formatNaira(roomSubtotal)}</span>
+                </div>
+
+                <div className="flex justify-between py-1">
+                  <span className="text-[#575757]">Taxes & Service Charges</span>
+                  <span className="text-emerald-700 font-medium">Included</span>
+                </div>
+
+                <div className="flex justify-between py-1 pt-2 border-t border-[#D5AD72]/20">
+                  <span className="text-[#575757]">Guest Name</span>
+                  <span className="font-medium text-[#142D26]">{fullName}</span>
+                </div>
+
+                <div className="flex justify-between py-1">
+                  <span className="text-[#575757]">Contact Details</span>
+                  <span className="font-medium text-[#142D26] text-right">{phone} · {email}</span>
+                </div>
+
+                <div className="flex justify-between py-1">
+                  <span className="text-[#575757]">Payment Preference</span>
+                  <span className="font-medium text-[#142D26]">{paymentPref}</span>
+                </div>
+
+                {/* Final Total Banner */}
+                <div className="mt-4 pt-3 border-t-2 border-[#142D26]/20 flex justify-between items-baseline">
+                  <div>
+                    <span className="text-sm font-serif font-bold text-[#142D26] block">Final Total</span>
+                    <span className="text-[10px] text-[#575757]">All taxes & service fees included</span>
+                  </div>
+                  <div className="text-right">
+                    <span
+                      className="text-2xl sm:text-3xl font-serif font-bold text-[#142D26]"
+                      style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+                    >
+                      {formatNaira(confirmedResult.total || totalPrice)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-center gap-4 pt-2">
+            {/* Action Buttons */}
+            <div className="flex flex-wrap justify-center gap-3 pt-2">
               <Button
-                variant="primary"
+                variant="secondary"
+                size="md"
+                onClick={() => window.print()}
+                icon={<Printer className="w-4 h-4" />}
+              >
+                Print Reservation
+              </Button>
+              <Button
+                variant="gold"
                 size="md"
                 onClick={onClose}
               >
-                Close Window
+                Done
               </Button>
             </div>
           </div>
@@ -619,101 +698,80 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 </div>
               </form>
 
-              {/* Transparent Price Breakdown Summary (5 cols) */}
-              <div className="lg:col-span-5 flex flex-col justify-between p-6 bg-[#F7F5F0] rounded-xl border border-[#D5AD72]/30">
+              {/* Selected Room Summary Preview (5 cols) */}
+              <div className="lg:col-span-5 flex flex-col justify-between p-6 bg-[#F7F5F0] rounded-xl border border-[#D5AD72]/30 space-y-5">
                 <div className="space-y-4">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-[#B88E52] block">
-                    Transparent Price Breakdown
-                  </span>
+                  <div className="flex items-center justify-between pb-3 border-b border-[#D5AD72]/20">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-[#B88E52]">
+                      Selected Accommodation
+                    </span>
+                    <span className="text-xs font-medium text-[#142D26]">
+                      {currentRoom?.Type}
+                    </span>
+                  </div>
 
-                  {/* Room Thumbnail & Title */}
+                  {/* Room Preview Card with Photo */}
                   {currentRoom && (
-                    <div className="flex gap-3 pb-4 border-b border-[#D5AD72]/20">
-                      <img
-                        src={currentRoom.ImageURL || '/images/hotel/deluxe-1.jpg'}
-                        alt={currentRoom.Name}
-                        onError={(e) => {
-                          const target = e.currentTarget as HTMLImageElement;
-                          target.onerror = null;
-                          target.src = '/images/hotel/deluxe-1.jpg';
-                        }}
-                        className="w-20 h-16 rounded-md object-cover shrink-0"
-                      />
-                      <div>
+                    <div className="rounded-xl overflow-hidden bg-white border border-[#D5AD72]/25 shadow-xs">
+                      <div className="relative aspect-[16/10] overflow-hidden bg-[#ECE8DE]">
+                        <img
+                          src={currentRoom.ImageURL || '/images/hotel/deluxe-1.jpg'}
+                          alt={currentRoom.Name}
+                          onError={(e) => {
+                            const target = e.currentTarget as HTMLImageElement;
+                            target.onerror = null;
+                            target.src = '/images/hotel/deluxe-1.jpg';
+                          }}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute bottom-2.5 right-2.5 bg-[#142D26]/90 backdrop-blur-xs text-white text-xs px-3 py-1 rounded-[4px] border border-[#D5AD72]/30 font-medium">
+                          <span className="text-[#E4C38E] font-serif font-bold text-sm">
+                            {formatNaira(pricePerNight)}
+                          </span>
+                          <span className="text-[11px] text-white/80"> / night</span>
+                        </div>
+                      </div>
+
+                      <div className="p-4 space-y-1.5">
                         <h4
-                          className="font-serif font-bold text-[#142D26] text-sm leading-snug"
+                          className="font-serif font-bold text-[#142D26] text-base leading-snug"
                           style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
                         >
                           {currentRoom.Name}
                         </h4>
-                        <span className="text-xs text-[#575757] block mt-0.5">
-                          {currentRoom.Type} · Up to {currentRoom.MaxGuests} guests/room
-                        </span>
+                        <div className="flex items-center gap-2 text-xs text-[#575757]">
+                          <span>{currentRoom.BedType || '1 King Bed'}</span>
+                          <span>·</span>
+                          <span>{currentRoom.RoomSize || '38 m²'}</span>
+                          <span>·</span>
+                          <span>Up to {currentRoom.MaxGuests} guests/rm</span>
+                        </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Line Item Breakdown */}
-                  <div className="space-y-2.5 text-xs text-[#242424]">
-                    <div className="flex justify-between">
-                      <span className="text-[#575757]">Check-in Date</span>
-                      <span className="font-medium text-[#142D26]">{formatHumanDate(checkIn) || '—'}</span>
+                  {/* Concise Booking Highlights */}
+                  <div className="p-3.5 rounded-lg bg-white border border-[#D5AD72]/20 space-y-2 text-xs">
+                    <div className="flex justify-between items-center text-[#575757]">
+                      <span>Stay Duration:</span>
+                      <span className="font-semibold text-[#142D26]">{nights} {nights === 1 ? 'Night' : 'Nights'}</span>
                     </div>
-
-                    <div className="flex justify-between">
-                      <span className="text-[#575757]">Check-out Date</span>
-                      <span className="font-medium text-[#142D26]">{formatHumanDate(checkOut) || '—'}</span>
-                    </div>
-
-                    <div className="flex justify-between">
-                      <span className="text-[#575757]">Length of Stay</span>
-                      <span className="font-semibold text-[#142D26]">
-                        {nights} {nights === 1 ? 'Night' : 'Nights'}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between">
-                      <span className="text-[#575757]">Number of Rooms</span>
-                      <span className="font-semibold text-[#142D26]">
-                        {safeRoomsCount} {safeRoomsCount === 1 ? 'Room' : 'Rooms'}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between">
-                      <span className="text-[#575757]">Registered Guests</span>
-                      <span className="font-medium text-[#142D26]">
-                        {adults} Adult{adults > 1 ? 's' : ''}{children > 0 ? `, ${children} Child` : ''}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between pt-2 border-t border-[#D5AD72]/20">
-                      <span className="text-[#575757]">Nightly Rate (per room)</span>
-                      <span className="font-semibold text-[#142D26]">{formatNaira(pricePerNight)}</span>
-                    </div>
-
-                    <div className="flex justify-between">
-                      <span className="text-[#575757]">
-                        Room Subtotal ({safeRoomsCount} rm × {nights} nt)
-                      </span>
-                      <span className="font-semibold text-[#142D26]">{formatNaira(roomSubtotal)}</span>
-                    </div>
-
-                    <div className="flex justify-between">
-                      <span className="text-[#575757]">Taxes & Service Charges</span>
-                      <span className="text-emerald-700 font-medium">Included</span>
+                    <div className="flex justify-between items-center text-[#575757]">
+                      <span>Selected Rooms:</span>
+                      <span className="font-semibold text-[#142D26]">{safeRoomsCount} {safeRoomsCount === 1 ? 'Room' : 'Rooms'}</span>
                     </div>
                   </div>
 
-                  {/* Final Booking Total */}
-                  <div className="pt-4 border-t border-[#D5AD72]/30 space-y-1">
+                  {/* Clean Rate Total Banner */}
+                  <div className="p-4 rounded-xl bg-[#142D26] text-white space-y-1 shadow-xs">
                     <div className="flex justify-between items-baseline">
                       <div>
-                        <span className="text-sm font-semibold text-[#142D26] block">Final Total</span>
-                        <span className="text-[10px] text-[#575757]">Calculated per room per night</span>
+                        <span className="text-xs text-white/70 block uppercase tracking-wider">Estimated Total</span>
+                        <span className="text-[10px] text-[#D5AD72]">All taxes & service fees included</span>
                       </div>
                       <div className="text-right">
                         <span
-                          className="text-2xl font-serif font-bold text-[#142D26]"
+                          className="text-2xl font-serif font-bold text-[#E4C38E]"
                           style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
                         >
                           {formatNaira(totalPrice)}
@@ -721,10 +779,39 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                       </div>
                     </div>
                   </div>
+
+                  {/* Optional Toggle for detailed rate calculation */}
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setShowRateDetails(!showRateDetails)}
+                      className="text-xs text-[#B88E52] hover:text-[#142D26] font-medium flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <span>{showRateDetails ? 'Hide calculation details' : 'View calculation details'}</span>
+                      {showRateDetails ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </button>
+
+                    {showRateDetails && (
+                      <div className="mt-2.5 p-3 rounded-lg bg-white border border-[#D5AD72]/20 text-xs text-[#575757] space-y-1.5 animate-fadeIn">
+                        <div className="flex justify-between">
+                          <span>Nightly Rate (per room):</span>
+                          <span className="font-semibold text-[#142D26]">{formatNaira(pricePerNight)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Rooms × Nights:</span>
+                          <span className="font-semibold text-[#142D26]">{safeRoomsCount} rm × {nights} nt</span>
+                        </div>
+                        <div className="flex justify-between pt-1 border-t border-[#F7F5F0]">
+                          <span className="font-medium text-[#142D26]">Room Subtotal:</span>
+                          <span className="font-semibold text-[#142D26]">{formatNaira(roomSubtotal)}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Submit Action for Desktop */}
-                <div className="hidden lg:block pt-6">
+                <div className="hidden lg:block pt-4">
                   <Button
                     type="button"
                     onClick={(e) => handleSubmit(e as any)}
@@ -737,8 +824,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   >
                     {loading ? 'Confirming Reservation...' : 'Confirm Reservation Request'}
                   </Button>
-                  <p className="text-[11px] text-center text-[#575757] mt-2.5">
-                    Direct booking confirmation · Pay at hotel or via payment link
+                  <p className="text-[11px] text-center text-[#575757] mt-2">
+                    Direct confirmation · Pay at hotel or via secure link
                   </p>
                 </div>
               </div>

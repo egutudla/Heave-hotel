@@ -53,6 +53,7 @@ import {
   MOCK_ROOMS,
   APPS_SCRIPT_URL,
 } from '../config/api';
+import { CODE_GS_CONTENT } from '../config/appsScriptCode';
 import { adminLogout, getAdminUser } from '../services/auth';
 import { formatNaira } from '../utils/currency';
 import { Button } from '../components/Button';
@@ -197,10 +198,17 @@ export const AdminPortalDashboard: React.FC<AdminPortalDashboardProps> = ({ onLo
     heroHeadline: 'Experience Unrivaled Comfort & Quiet Luxury',
   });
 
-  // Google Sheets Ping State
+  // Google Sheets Ping & Sync States
   const [pingLoading, setPingLoading] = useState(false);
   const [pingResult, setPingResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [copiedScript, setCopiedScript] = useState(false);
+  const [appsScriptUrlInput, setAppsScriptUrlInput] = useState(
+    () => localStorage.getItem('havenstay_custom_apps_script_url') || APPS_SCRIPT_URL
+  );
+  const [isSyncingSheet, setIsSyncingSheet] = useState(false);
+  const [syncSheetResult, setSyncSheetResult] = useState<string | null>(null);
+  const [testBookingLoading, setTestBookingLoading] = useState(false);
+  const [showCodeModal, setShowCodeModal] = useState(false);
 
   // Load Data on Mount
   useEffect(() => {
@@ -332,12 +340,13 @@ export const AdminPortalDashboard: React.FC<AdminPortalDashboardProps> = ({ onLo
     setPingResult(null);
     const start = Date.now();
     try {
-      const res = await fetch(`${APPS_SCRIPT_URL}?action=rooms`);
+      const targetUrl = appsScriptUrlInput.trim() || APPS_SCRIPT_URL;
+      const res = await fetch(`${targetUrl}?action=rooms`);
       const latency = Date.now() - start;
       if (res.ok) {
         setPingResult({
           ok: true,
-          message: `Connected successfully to Google Apps Script! Latency: ${latency}ms`,
+          message: `Connected successfully to Google Apps Script (${latency}ms).`,
         });
         showToast('Google Apps Script connection verified', 'success');
       } else {
@@ -355,6 +364,98 @@ export const AdminPortalDashboard: React.FC<AdminPortalDashboardProps> = ({ onLo
       showToast('Connection test failed', 'error');
     } finally {
       setPingLoading(false);
+    }
+  };
+
+  const handleSaveAppsScriptUrl = async () => {
+    const trimmed = appsScriptUrlInput.trim();
+    if (!trimmed.startsWith('http')) {
+      showToast('Please enter a valid URL starting with https://', 'error');
+      return;
+    }
+    localStorage.setItem('havenstay_custom_apps_script_url', trimmed);
+    const token = sessionStorage.getItem('havenstay_management_token') || localStorage.getItem('havenstay_management_token');
+    try {
+      await fetch('/api/admin/apps-script-url', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ url: trimmed }),
+      });
+      showToast('Apps Script Web App URL updated successfully', 'success');
+    } catch {
+      showToast('Saved to browser storage', 'info');
+    }
+  };
+
+  const handleTestBookingToSheet = async () => {
+    setTestBookingLoading(true);
+    setSyncSheetResult(null);
+    const token = sessionStorage.getItem('havenstay_management_token') || localStorage.getItem('havenstay_management_token');
+    try {
+      const res = await fetch('/api/admin/test-sheet', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ url: appsScriptUrlInput.trim() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSyncSheetResult(`Success: Diagnostic booking was received by Google Apps Script (${data.latency}ms). Refresh your Google Sheet to see the row!`);
+        showToast('Test booking submitted to Sheet', 'success');
+      } else {
+        setSyncSheetResult(`Notice: ${data.message || 'Check your Google Sheet deployment'}`);
+        showToast('Test booking notice', 'info');
+      }
+    } catch (err: any) {
+      setSyncSheetResult(`Network error: ${err.message || 'Could not reach server'}`);
+      showToast('Connection error', 'error');
+    } finally {
+      setTestBookingLoading(false);
+    }
+  };
+
+  const handleSyncAllToSheet = async () => {
+    setIsSyncingSheet(true);
+    setSyncSheetResult(null);
+    const token = sessionStorage.getItem('havenstay_management_token') || localStorage.getItem('havenstay_management_token');
+    try {
+      const res = await fetch('/api/admin/sync-sheet', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ url: appsScriptUrlInput.trim() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSyncSheetResult(`Sync complete! ${data.synced} of ${data.total} reservations were pushed to your Google Sheet.`);
+        showToast(`Pushed ${data.synced} reservations to Sheet`, 'success');
+      } else {
+        setSyncSheetResult(`Sync issue: ${data.message}`);
+        showToast('Sync error', 'error');
+      }
+    } catch (err: any) {
+      setSyncSheetResult(`Error: ${err.message}`);
+      showToast('Sync error', 'error');
+    } finally {
+      setIsSyncingSheet(false);
+    }
+  };
+
+  const handleCopyCodeGs = () => {
+    try {
+      navigator.clipboard.writeText(CODE_GS_CONTENT);
+      setCopiedScript(true);
+      showToast('Code.gs copied to clipboard!', 'success');
+      setTimeout(() => setCopiedScript(false), 3000);
+    } catch {
+      showToast('Please select and copy the code manually', 'info');
     }
   };
 
@@ -654,6 +755,17 @@ export const AdminPortalDashboard: React.FC<AdminPortalDashboardProps> = ({ onLo
               <FileSpreadsheet className="w-3.5 h-3.5" />
               <span className="hidden md:inline">Google Spreadsheet</span>
             </a>
+
+            {/* Quick Sync to Sheet Button */}
+            <button
+              onClick={handleSyncAllToSheet}
+              disabled={isSyncingSheet}
+              title="Push all reservations to Google Sheet"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25 text-emerald-300 text-xs font-medium transition-colors cursor-pointer"
+            >
+              <Download className={`w-3.5 h-3.5 ${isSyncingSheet ? 'animate-bounce' : ''}`} />
+              <span className="hidden lg:inline">{isSyncingSheet ? 'Syncing...' : 'Sync to Sheet'}</span>
+            </button>
 
             {/* Logout on Top Bar */}
             <button
@@ -1463,43 +1575,151 @@ export const AdminPortalDashboard: React.FC<AdminPortalDashboardProps> = ({ onLo
                   </div>
                 </div>
 
-                {/* Google Sheets Sync Diagnostics */}
-                <div className="p-6 rounded-2xl bg-[#141A18] border border-[#D5AD72]/30 space-y-4">
-                  <div className="flex items-center gap-2">
-                    <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
-                    <h3 className="font-serif font-bold text-white text-base">Google Sheets Integration</h3>
-                  </div>
-                  <p className="text-xs text-white/60">
-                    Target Spreadsheet ID: <code className="text-[#D5AD72]">1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqpIHM</code>
-                  </p>
-                  <div className="p-3 rounded-lg bg-black/40 border border-white/5 text-[11px] space-y-1 font-mono text-white/70">
-                    <div>Status: Connected via Google Apps Script Web App</div>
-                    <div className="truncate text-[10px] text-white/40">{APPS_SCRIPT_URL}</div>
-                  </div>
+                {/* Google Sheets Sync Diagnostics & Controls */}
+                <div className="p-6 sm:p-8 rounded-2xl bg-[#141A18] border border-[#D5AD72]/40 space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                        <FileSpreadsheet className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-serif font-bold text-white text-lg">Google Sheets Live Synchronization</h3>
+                        <p className="text-xs text-white/60">
+                          Direct bidirectional integration for bookings, guest records, and availability
+                        </p>
+                      </div>
+                    </div>
 
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    <button
-                      onClick={handlePingGoogleSheets}
-                      disabled={pingLoading}
-                      className="px-4 py-2 rounded-lg bg-[#D5AD72] text-[#121615] text-xs font-bold hover:bg-[#e0bb82] cursor-pointer"
-                    >
-                      {pingLoading ? 'Testing Live Connection...' : 'Test Connection Latency'}
-                    </button>
                     <a
                       href="https://docs.google.com/spreadsheets/d/1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqpIHM/edit"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-xs font-semibold hover:bg-white/10"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold hover:bg-emerald-500/25 transition-colors"
                     >
-                      Open Spreadsheet
+                      <span>Open Live Spreadsheet</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   </div>
 
+                  {/* Target Spreadsheet ID info */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-xl bg-[#0D1110] border border-white/5 space-y-1">
+                      <span className="text-[10px] uppercase tracking-wider text-white/40 block">Target Spreadsheet ID</span>
+                      <code className="text-xs font-mono text-[#D5AD72] break-all block select-all">
+                        1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqpIHM
+                      </code>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-[#0D1110] border border-white/5 space-y-1">
+                      <span className="text-[10px] uppercase tracking-wider text-white/40 block">Integration Method</span>
+                      <span className="text-xs text-emerald-400 font-medium flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        Google Apps Script Web App (JSON / GET / POST)
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Active Google Apps Script URL Editor */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-white/80">
+                      Google Apps Script Web App URL (/exec)
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <input
+                        type="url"
+                        value={appsScriptUrlInput}
+                        onChange={(e) => setAppsScriptUrlInput(e.target.value)}
+                        placeholder="https://script.google.com/macros/s/.../exec"
+                        className="flex-1 min-h-[42px] px-3.5 bg-[#0D1110] border border-white/10 rounded-lg text-xs font-mono text-white/90 focus:outline-none focus:border-[#D5AD72]"
+                      />
+                      <Button
+                        variant="gold"
+                        size="sm"
+                        onClick={handleSaveAppsScriptUrl}
+                        icon={<Save className="w-3.5 h-3.5" />}
+                      >
+                        Save URL
+                      </Button>
+                    </div>
+                    <p className="text-[11px] text-white/40">
+                      If you redeploy a new version of the script in Google Apps Script, paste the updated URL here.
+                    </p>
+                  </div>
+
+                  {/* Operational Action Buttons */}
+                  <div className="flex flex-wrap items-center gap-3 pt-2">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={handlePingGoogleSheets}
+                      loading={pingLoading}
+                      icon={<RefreshCw className="w-3.5 h-3.5" />}
+                    >
+                      {pingLoading ? 'Testing...' : 'Test Connection'}
+                    </Button>
+
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleTestBookingToSheet}
+                      loading={testBookingLoading}
+                      icon={<Plus className="w-3.5 h-3.5" />}
+                    >
+                      {testBookingLoading ? 'Sending Test...' : 'Send Test Booking (HS-TEST)'}
+                    </Button>
+
+                    <Button
+                      variant="gold"
+                      size="sm"
+                      onClick={handleSyncAllToSheet}
+                      loading={isSyncingSheet}
+                      icon={<Download className="w-3.5 h-3.5" />}
+                    >
+                      {isSyncingSheet ? 'Syncing...' : 'Push All Reservations to Sheet'}
+                    </Button>
+
+                    <button
+                      type="button"
+                      onClick={handleCopyCodeGs}
+                      className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-xs font-semibold hover:bg-white/10 flex items-center gap-1.5 cursor-pointer transition-colors"
+                    >
+                      {copiedScript ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedScript ? 'Code.gs Copied!' : 'Copy Code.gs Script'}</span>
+                    </button>
+                  </div>
+
+                  {/* Live Feedback / Result Cards */}
                   {pingResult && (
-                    <div className={`p-3 rounded-lg text-xs ${pingResult.ok ? 'bg-emerald-950 text-emerald-300' : 'bg-amber-950 text-amber-300'}`}>
-                      {pingResult.message}
+                    <div className={`p-4 rounded-xl text-xs flex items-start gap-2.5 ${pingResult.ok ? 'bg-emerald-950/70 border border-emerald-500/30 text-emerald-300' : 'bg-amber-950/70 border border-amber-500/30 text-amber-300'}`}>
+                      {pingResult.ok ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" /> : <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />}
+                      <div>
+                        <span className="font-semibold block">{pingResult.ok ? 'Connection Verified' : 'Connection Notice'}</span>
+                        <span>{pingResult.message}</span>
+                      </div>
                     </div>
                   )}
+
+                  {syncSheetResult && (
+                    <div className="p-4 rounded-xl text-xs bg-emerald-950/70 border border-emerald-500/30 text-emerald-200 flex items-start gap-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-semibold block">Synchronization Status</span>
+                        <span>{syncSheetResult}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Helpful Quick Guide */}
+                  <div className="p-4 rounded-xl bg-black/40 border border-white/5 space-y-2.5 text-xs text-white/70">
+                    <span className="font-semibold text-white block">Why reservations might not appear immediately:</span>
+                    <ol className="list-decimal list-inside space-y-1 text-white/60 text-[11px] leading-relaxed">
+                      <li>In Google Sheets, open your spreadsheet <code className="text-[#D5AD72]">1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqpIHM</code>.</li>
+                      <li>Click top menu: <strong className="text-white">Extensions</strong> → <strong className="text-white">Apps Script</strong>.</li>
+                      <li>Delete all existing text in the editor, click <strong className="text-[#D5AD72]">Copy Code.gs Script</strong> above, and paste it into the editor.</li>
+                      <li>Click <strong className="text-white">Deploy</strong> (top right) → <strong className="text-white">New deployment</strong> → select <strong className="text-white">Web app</strong> → set Access to <strong className="text-white">"Anyone"</strong> → click <strong className="text-white">Deploy</strong>.</li>
+                      <li>Copy the Web App URL that Google gives you, paste it into the URL field above, and click <strong className="text-[#D5AD72]">Save URL</strong>!</li>
+                    </ol>
+                  </div>
                 </div>
               </div>
             </div>

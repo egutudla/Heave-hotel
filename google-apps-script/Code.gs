@@ -65,11 +65,15 @@ function getOrCreateSheet_(ss, sheetName, headers) {
   var sheet = ss.getSheetByName(sheetName);
   
   if (!sheet) {
-    // If the sheet has an empty 'Sheet1' and we need 'Bookings', rename 'Sheet1' so user sees it right away!
+    // If the sheet has an empty or default 'Sheet1' and we need 'Bookings', rename 'Sheet1'
     if (sheetName === 'Bookings') {
       var sheet1 = ss.getSheetByName('Sheet1');
-      if (sheet1 && sheet1.getLastRow() <= 1) {
-        sheet = sheet1.setName('Bookings');
+      if (sheet1) {
+        try {
+          sheet = sheet1.setName('Bookings');
+        } catch (renameErr) {
+          sheet = sheet1;
+        }
       }
     }
     

@@ -28,14 +28,14 @@ export const RoomCard: React.FC<RoomCardProps> = ({
 
   return (
     <motion.article
-      initial={{ opacity: 0, y: 38 }}
+      initial={{ opacity: 0, y: 28 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.15 }}
-      transition={{ duration: 0.85, delay: (index % 3) * 0.12, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 1.1, delay: (index % 3) * 0.12, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ y: -4 }}
-      className="group flex flex-col bg-white rounded-xl overflow-hidden border border-[#D5AD72]/25 shadow-[0_4px_20px_rgba(20,45,38,0.04)] hover:shadow-[0_16px_36px_rgba(20,45,38,0.12)] transition-all duration-300"
+      className="group flex flex-col bg-white rounded-xl overflow-hidden border border-[#D5AD72]/25 shadow-[0_4px_20px_rgba(20,45,38,0.04)] hover:shadow-[0_16px_36px_rgba(20,45,38,0.12)] transition-all duration-500"
     >
-      {/* Room Image Container with 5% zoom on hover */}
+      {/* Room Image Container with subtle 4% zoom on hover */}
       <div className="relative aspect-[16/10] overflow-hidden bg-[#ECE8DE]">
         <img
           src={room.ImageURL || '/images/hotel/deluxe-1.jpg'}
@@ -46,7 +46,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
             target.onerror = null;
             target.src = '/images/hotel/deluxe-1.jpg';
           }}
-          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+          className="w-full h-full object-cover transition-transform duration-1000 ease-out group-hover:scale-104"
         />
 
         {/* Ambient Dark-to-Transparent Gradient Overlay for Image Contrast */}

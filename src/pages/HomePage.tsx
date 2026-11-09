@@ -204,12 +204,12 @@ export const HomePage: React.FC<HomePageProps> = ({
             <span className="h-[1px] w-6 bg-[#D5AD72]" />
           </motion.div>
 
-          {/* Masked Headline Revealing Line by Line */}
+          {/* Masked Headline Revealing Line by Line with Calm, Regal Pacing */}
           <div className="overflow-hidden">
             <motion.h1
-              initial={{ y: '100%', opacity: 0 }}
+              initial={{ y: '40%', opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 1.2, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
               className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-serif font-bold text-white tracking-tight leading-[1.12]"
               style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
             >
@@ -218,9 +218,9 @@ export const HomePage: React.FC<HomePageProps> = ({
           </div>
           <div className="overflow-hidden mb-6">
             <motion.h1
-              initial={{ y: '100%', opacity: 0 }}
+              initial={{ y: '40%', opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 1.2, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
               className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-serif font-bold text-[#E4C38E] tracking-tight leading-[1.12]"
               style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
             >
@@ -230,9 +230,9 @@ export const HomePage: React.FC<HomePageProps> = ({
 
           {/* Subtext Fade-up */}
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.7, ease: 'easeOut' }}
+            transition={{ duration: 1.1, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
             className="text-sm sm:text-lg md:text-xl text-white/85 max-w-2xl mx-auto font-normal leading-relaxed mb-8 sm:mb-10"
           >
             Thoughtfully finished rooms, sound-insulated spaces, and genuine hospitality for travellers seeking true rest.
@@ -240,9 +240,9 @@ export const HomePage: React.FC<HomePageProps> = ({
 
           {/* Buttons: Primary & Secondary */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.85, ease: 'easeOut' }}
+            transition={{ duration: 1.0, delay: 0.9, ease: [0.22, 1, 0.36, 1] }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto"
           >
             <Button

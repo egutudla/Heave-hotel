@@ -382,6 +382,130 @@ app.get('/api/admin/contacts', requireAdminAuth, (req, res) => {
   });
 });
 
+// GET /api/admin/apps-script-url
+let activeAppsScriptUrl = process.env.VITE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbzqG6y5pbnm59u-7j0FGZX35rezq_nhmxEECXVAhYLNxNEILaar_VZfJgdUX-YN5SDa/exec';
+
+app.get('/api/admin/apps-script-url', requireAdminAuth, (req, res) => {
+  return res.json({
+    success: true,
+    url: activeAppsScriptUrl,
+    spreadsheetId: '1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqpIHM',
+  });
+});
+
+// POST /api/admin/apps-script-url (Update Google Apps Script URL dynamically)
+app.post('/api/admin/apps-script-url', requireAdminAuth, (req, res) => {
+  const { url } = req.body;
+  if (url && typeof url === 'string' && url.trim().startsWith('http')) {
+    activeAppsScriptUrl = url.trim();
+    return res.json({ success: true, url: activeAppsScriptUrl, message: 'Google Apps Script URL updated successfully.' });
+  }
+  return res.status(400).json({ success: false, message: 'Invalid URL provided.' });
+});
+
+// POST /api/admin/test-sheet (Test connection and record a ping or test booking)
+app.post('/api/admin/test-sheet', requireAdminAuth, async (req, res) => {
+  try {
+    const targetUrl = req.body.url || activeAppsScriptUrl;
+    const testQuery = new URLSearchParams({
+      action: 'book',
+      bookingRef: 'HS-TEST-' + crypto.randomBytes(2).toString('hex').toUpperCase(),
+      roomId: 'ROOM-101',
+      roomName: 'Deluxe King Room (Connection Test)',
+      pricePerNight: '165000',
+      checkIn: new Date().toISOString().split('T')[0],
+      checkOut: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
+      nights: '2',
+      roomsCount: '1',
+      total: '330000',
+      adults: '2',
+      children: '0',
+      fullName: 'Danny Egutu (Sync Test)',
+      email: 'egutudanny6@gmail.com',
+      phone: '+234 803 123 4567',
+      paymentPref: 'Pay at hotel',
+      requests: 'Diagnostic test row from Admin Portal',
+    });
+
+    const start = Date.now();
+    const fetchRes = await fetch(`${targetUrl}?${testQuery.toString()}`, { redirect: 'follow' });
+    const latency = Date.now() - start;
+    const bodyText = await fetchRes.text();
+
+    let parsed = null;
+    try {
+      parsed = JSON.parse(bodyText);
+    } catch {}
+
+    return res.json({
+      success: fetchRes.ok,
+      status: fetchRes.status,
+      latency,
+      rawResponse: bodyText.slice(0, 300),
+      parsed,
+      message: fetchRes.ok
+        ? `Successfully reached Google Apps Script (${latency}ms). Response: ${bodyText.slice(0, 100)}`
+        : `Google Apps Script returned HTTP ${fetchRes.status}`,
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to connect to Google Apps Script: ' + (err.message || String(err)),
+    });
+  }
+});
+
+// POST /api/admin/sync-sheet (Push all stored reservations to Google Apps Script)
+app.post('/api/admin/sync-sheet', requireAdminAuth, async (req, res) => {
+  try {
+    const targetUrl = req.body.url || activeAppsScriptUrl;
+    let synced = 0;
+    let errors = 0;
+
+    for (const b of reservationsStore) {
+      try {
+        const query = new URLSearchParams({
+          action: 'book',
+          bookingRef: b.bookingRef,
+          roomId: b.roomId,
+          roomName: b.roomName,
+          pricePerNight: String(b.pricePerNight),
+          checkIn: b.checkIn,
+          checkOut: b.checkOut,
+          nights: String(b.nights),
+          roomsCount: String(b.roomsCount || 1),
+          total: String(b.total),
+          adults: String(b.adults),
+          children: String(b.children || 0),
+          fullName: b.fullName,
+          email: b.email,
+          phone: b.phone,
+          paymentPref: b.paymentPref,
+          requests: b.requests || '',
+        });
+        const r = await fetch(`${targetUrl}?${query.toString()}`, { redirect: 'follow' });
+        if (r.ok) synced++;
+        else errors++;
+      } catch {
+        errors++;
+      }
+    }
+
+    return res.json({
+      success: true,
+      total: reservationsStore.length,
+      synced,
+      errors,
+      message: `Pushed ${synced} of ${reservationsStore.length} reservations to Google Sheet.`,
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: 'Sync error: ' + (err.message || String(err)),
+    });
+  }
+});
+
 // ==========================================
 // 3. PUBLIC CUSTOMER API ENDPOINTS
 // ==========================================
@@ -431,9 +555,9 @@ app.post('/api/bookings', async (req, res) => {
   reservationsStore.unshift(newReservation);
 
   // Asynchronously relay to Google Apps Script
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzqG6y5pbnm59u-7j0FGZX35rezq_nhmxEECXVAhYLNxNEILaar_VZfJgdUX-YN5SDa/exec';
   (async () => {
     try {
+      const targetUrl = activeAppsScriptUrl;
       // 1. Send via GET query parameters (bypasses Google Apps Script POST auth redirect)
       const query = new URLSearchParams({
         action: 'book',
@@ -454,12 +578,12 @@ app.post('/api/bookings', async (req, res) => {
         paymentPref: newReservation.paymentPref,
         requests: newReservation.requests || '',
       });
-      const getRes = await fetch(`${APPS_SCRIPT_URL}?${query.toString()}`, { redirect: 'follow' });
+      const getRes = await fetch(`${targetUrl}?${query.toString()}`, { redirect: 'follow' });
       const getText = await getRes.text().catch(() => '');
       console.log('Google Apps Script GET relay result:', getRes.status, getText.slice(0, 120));
 
       // 2. Also try POST with text/plain
-      await fetch(APPS_SCRIPT_URL, {
+      await fetch(targetUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(newReservation),

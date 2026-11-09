@@ -16,8 +16,8 @@ interface ScrollRevealProps {
 export const ScrollReveal: React.FC<ScrollRevealProps> = ({
   children,
   delay = 0,
-  duration = 0.9,
-  yOffset = 40,
+  duration = 1.3,
+  yOffset = 24,
   className = '',
 }) => {
   return (
@@ -28,7 +28,7 @@ export const ScrollReveal: React.FC<ScrollRevealProps> = ({
       transition={{
         duration,
         delay,
-        ease: [0.16, 1, 0.3, 1],
+        ease: [0.22, 1, 0.36, 1],
       }}
       className={className}
     >
