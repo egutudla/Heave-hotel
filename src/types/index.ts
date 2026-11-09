@@ -19,6 +19,7 @@ export interface SearchParams {
   checkOut: string;
   adults: number;
   children: number;
+  roomsCount?: number;
 }
 
 export interface BookingFormData {
@@ -27,6 +28,7 @@ export interface BookingFormData {
   checkOut: string;
   adults: number;
   children: number;
+  roomsCount?: number;
   fullName: string;
   email: string;
   phone: string;
@@ -39,6 +41,7 @@ export interface BookingResult {
   success: boolean;
   bookingRef?: string;
   nights?: number;
+  roomsCount?: number;
   total?: number;
   message?: string;
 }
@@ -49,6 +52,7 @@ export interface BookingRecord extends BookingFormData {
   roomName: string;
   pricePerNight: number;
   nights: number;
+  roomsCount?: number;
   total: number;
   status: 'Pending' | 'Confirmed' | 'Checked-In' | 'Completed' | 'Cancelled';
   createdAt: string;

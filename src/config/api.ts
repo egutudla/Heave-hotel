@@ -18,11 +18,11 @@ export const APPS_SCRIPT_URL = API_URL;
 export const MOCK_ROOMS: Room[] = [
   {
     RoomID: 'ROOM-101',
-    Name: 'Deluxe King Room',
+    Name: 'Deluxe Room',
     Type: 'Deluxe',
-    PricePerNight: 165000,
-    MaxGuests: 2,
-    Amenities: 'Wi-Fi, Air conditioning, King-size bed, En-suite rainfall shower, Smart TV, City view',
+    PricePerNight: 80000,
+    MaxGuests: 3,
+    Amenities: 'High-speed Wi-Fi, Air conditioning, California king bed, En-suite rainfall shower, Smart TV, City view',
     ImageURL: '/images/hotel/deluxe-1.jpg',
     AdditionalImages: [
       '/images/hotel/deluxe-1.jpg',
@@ -30,7 +30,7 @@ export const MOCK_ROOMS: Room[] = [
       '/images/hotel/executive-suite-1.jpg',
     ],
     Description:
-      'Refined elegance meets quiet luxury. The Deluxe King Room features an expansive king-size bed draped in Egyptian cotton, custom oak cabinetry, a spa-inspired rainfall shower, and floor-to-ceiling windows offering ambient natural light.',
+      'A serene and spacious room designed for restful stays. Features a California king-size bed with crisp cotton linens, a dedicated work area, an en-suite rainfall shower, and natural light from large sound-insulated windows.',
     BedType: '1 California King Bed',
     RoomSize: '38 m² / 409 sq ft',
     Active: true,
@@ -40,9 +40,9 @@ export const MOCK_ROOMS: Room[] = [
     RoomID: 'ROOM-202',
     Name: 'Executive Suite',
     Type: 'Executive Suite',
-    PricePerNight: 245000,
-    MaxGuests: 3,
-    Amenities: 'Wi-Fi, Air conditioning, Separate lounge, Deep soaking tub, Nespresso bar, Executive lounge access',
+    PricePerNight: 140000,
+    MaxGuests: 4,
+    Amenities: 'High-speed Wi-Fi, Air conditioning, Separate living lounge, Deep soaking tub, Nespresso bar, Work desk',
     ImageURL: '/images/hotel/executive-suite-1.jpg',
     AdditionalImages: [
       '/images/hotel/executive-suite-1.jpg',
@@ -162,13 +162,45 @@ export async function fetchRooms(): Promise<Room[]> {
     try {
       const data = JSON.parse(text);
       if (Array.isArray(data) && data.length > 0) {
-        // Normalize any boolean string from Google Sheets
-        return data.map((room) => ({
-          ...room,
-          PricePerNight: Number(room.PricePerNight) || 165000,
-          MaxGuests: Number(room.MaxGuests) || 2,
-          Active: room.Active === true || room.Active === 'TRUE',
-        }));
+        return data.map((sheetRoom: any, index: number) => {
+          // Find matching default room from catalog
+          const fallback =
+            MOCK_ROOMS.find((m) => String(m.RoomID) === String(sheetRoom.RoomID)) ||
+            MOCK_ROOMS[index % MOCK_ROOMS.length] ||
+            MOCK_ROOMS[0];
+
+          // Ensure robust valid image URL (never undefined or empty)
+          const imageUrl =
+            sheetRoom.ImageURL && typeof sheetRoom.ImageURL === 'string' && sheetRoom.ImageURL.trim().length > 3
+              ? sheetRoom.ImageURL.trim()
+              : fallback.ImageURL;
+
+          // Normalize nightly price (handling shorthand numbers like 165 -> 165000)
+          const rawPrice = Number(sheetRoom.PricePerNight);
+          const price = rawPrice >= 10000 ? rawPrice : (rawPrice > 0 ? rawPrice * 1000 : fallback.PricePerNight);
+
+          return {
+            ...fallback,
+            ...sheetRoom,
+            ImageURL: imageUrl,
+            AdditionalImages:
+              Array.isArray(sheetRoom.AdditionalImages) && sheetRoom.AdditionalImages.length > 0
+                ? sheetRoom.AdditionalImages
+                : fallback.AdditionalImages,
+            Description: sheetRoom.Description || fallback.Description,
+            BedType: sheetRoom.BedType || fallback.BedType,
+            RoomSize: sheetRoom.RoomSize || fallback.RoomSize,
+            Amenities: sheetRoom.Amenities || fallback.Amenities,
+            PricePerNight: price,
+            MaxGuests: Number(sheetRoom.MaxGuests) || fallback.MaxGuests,
+            Active:
+              sheetRoom.Active === true ||
+              sheetRoom.Active === 'TRUE' ||
+              sheetRoom.Active === 'true' ||
+              sheetRoom.Active === undefined,
+            Featured: sheetRoom.Featured ?? fallback.Featured,
+          };
+        });
       }
     } catch {
       // Non-JSON response, fallback cleanly
@@ -237,8 +269,12 @@ export async function submitBooking(formData: BookingFormData): Promise<BookingR
   const ci = new Date(formData.checkIn);
   const co = new Date(formData.checkOut);
   const nights = Math.max(1, Math.round((co.getTime() - ci.getTime()) / 86400000));
+  const roomsCount = Math.max(1, Number(formData.roomsCount) || 1);
   const room = MOCK_ROOMS.find((r) => r.RoomID === formData.roomId) || MOCK_ROOMS[0];
-  const total = nights * room.PricePerNight;
+
+  // STRICT PRICING RULE: Room Price Per Night * Number of Nights * Number of Rooms
+  // Adults or children NEVER multiply the room price.
+  const total = room.PricePerNight * nights * roomsCount;
   const localRef = 'HS-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
   // 1. Send to server-side API (which records into shared store and relays to Apps Script)
@@ -248,8 +284,10 @@ export async function submitBooking(formData: BookingFormData): Promise<BookingR
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...formData,
+        roomsCount,
         roomName: room.Name,
         pricePerNight: room.PricePerNight,
+        total,
       }),
     });
     if (serverRes.ok) {
@@ -262,6 +300,7 @@ export async function submitBooking(formData: BookingFormData): Promise<BookingR
           bookingRef: assignedRef,
           roomName: room.Name,
           pricePerNight: room.PricePerNight,
+          roomsCount,
           nights: serverData.nights || nights,
           total: serverData.total || total,
           status: 'Pending',
@@ -272,6 +311,7 @@ export async function submitBooking(formData: BookingFormData): Promise<BookingR
           success: true,
           bookingRef: assignedRef,
           nights: serverData.nights || nights,
+          roomsCount,
           total: serverData.total || total,
           message: serverData.message,
         };
@@ -288,6 +328,7 @@ export async function submitBooking(formData: BookingFormData): Promise<BookingR
     bookingRef: localRef,
     roomName: room.Name,
     pricePerNight: room.PricePerNight,
+    roomsCount,
     nights,
     total,
     status: 'Pending',
@@ -306,50 +347,18 @@ export async function submitBooking(formData: BookingFormData): Promise<BookingR
   }
 
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000);
-
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain;charset=utf-8',
-      },
-      body: JSON.stringify({
-        ...formData,
-        roomName: room.Name,
-        pricePerNight: room.PricePerNight,
-      }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    if (res.ok) {
-      const text = await res.text();
-      try {
-        const result = JSON.parse(text);
-        if (result && result.success !== false) {
-          return {
-            success: true,
-            bookingRef: result.bookingRef || localRef,
-            nights: result.nights || nights,
-            total: result.total || total,
-            message: result.message,
-          };
-        }
-      } catch {
-        // Returned non-JSON (Google Drive redirect), try GET fallback
-      }
-    }
-
-    // Dual fallback: Send via GET query parameters
+    // 1. Direct GET query parameters (Reliably accepted by Google Apps Script without CORS or auth redirects)
     const queryParams = new URLSearchParams({
       action: 'book',
+      bookingRef: localRef,
       roomId: formData.roomId,
       roomName: room.Name,
       pricePerNight: String(room.PricePerNight),
       checkIn: formData.checkIn,
       checkOut: formData.checkOut,
+      nights: String(nights),
+      roomsCount: String(roomsCount),
+      total: String(total),
       adults: String(formData.adults),
       children: String(formData.children || 0),
       fullName: formData.fullName,
@@ -359,7 +368,14 @@ export async function submitBooking(formData: BookingFormData): Promise<BookingR
       paymentPref: formData.paymentPref || '',
     });
 
-    const getRes = await fetch(`${APPS_SCRIPT_URL}?${queryParams.toString()}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+    const getRes = await fetch(`${APPS_SCRIPT_URL}?${queryParams.toString()}`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
     if (getRes.ok) {
       const text = await getRes.text();
       try {
@@ -375,6 +391,18 @@ export async function submitBooking(formData: BookingFormData): Promise<BookingR
         }
       } catch {}
     }
+
+    // 2. Also try POST with text/plain
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        ...formData,
+        bookingRef: localRef,
+        roomName: room.Name,
+        pricePerNight: room.PricePerNight,
+      }),
+    }).catch(() => {});
   } catch (err) {
     console.warn('HavenStay API: Apps Script endpoint unavailable, gracefully confirming booking:', err);
   }

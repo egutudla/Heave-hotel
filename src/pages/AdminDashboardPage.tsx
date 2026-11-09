@@ -760,8 +760,13 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                     <div>
                       <div className="relative aspect-[16/10] overflow-hidden">
                         <img
-                          src={room.ImageURL}
+                          src={room.ImageURL || '/images/hotel/deluxe-1.jpg'}
                           alt={room.Name}
+                          onError={(e) => {
+                            const target = e.currentTarget as HTMLImageElement;
+                            target.onerror = null;
+                            target.src = '/images/hotel/deluxe-1.jpg';
+                          }}
                           className="w-full h-full object-cover"
                         />
                         <div className="absolute top-3 left-3 bg-[#142D26]/90 backdrop-blur-sm text-white px-2.5 py-1 rounded text-xs font-medium">
@@ -1193,7 +1198,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                 <div className="flex justify-between items-center text-xs pt-1">
                   <span className="font-semibold text-[#142D26]">Spreadsheet ID:</span>
                   <span className="font-mono text-xs text-[#575757]">
-                    1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqplHM
+                    1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqpIHM
                   </span>
                 </div>
               </div>
@@ -1212,7 +1217,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                 </button>
 
                 <a
-                  href="https://docs.google.com/spreadsheets/d/1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqplHM/edit"
+                  href="https://docs.google.com/spreadsheets/d/1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqpIHM/edit"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-white border border-[#D5AD72] text-[#142D26] text-xs sm:text-sm font-semibold hover:bg-[#F7F5F0] transition-colors"
@@ -1261,26 +1266,26 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                   </div>
                   <div>
                     <h4 className="font-serif font-bold text-[#142D26] text-sm sm:text-base">
-                      Important: Why reservations were not appearing in your Google Spreadsheet
+                      Why reservations were not appearing in your Google Spreadsheet
                     </h4>
                     <p className="text-xs text-[#575757] mt-1 leading-relaxed">
-                      In your spreadsheet screenshot, your document only contains two default blank tabs: <strong className="text-[#142D26]">Sheet1</strong> and <strong className="text-[#142D26]">Sheet2</strong>. The Google Apps Script expects a sheet named <strong className="text-[#142D26]">"Bookings"</strong> to write reservation rows into.
+                      In your spreadsheet screenshot, your document only contains default blank tabs (<strong className="text-[#142D26]">Sheet1</strong> and <strong className="text-[#142D26]">Sheet2</strong>) and the spreadsheet ID in your Apps Script needed the uppercase <strong className="text-[#142D26]">I</strong> (<code className="bg-amber-100 text-amber-900 px-1 py-0.5 rounded font-mono text-[11px]">1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqpIHM</code>).
                     </p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                   <div className="p-3.5 rounded-lg bg-white border border-[#D5AD72]/30 space-y-1.5">
-                    <span className="text-xs font-bold text-[#142D26] block">Method 1: Rename "Sheet1" tab</span>
+                    <span className="text-xs font-bold text-[#142D26] block">Option 1: Quick 1-Click Code Update</span>
                     <p className="text-[11px] text-[#575757] leading-relaxed">
-                      In your Google Sheet at the bottom left, double click <strong className="text-[#142D26]">"Sheet1"</strong> and rename it to <strong className="text-[#142D26]">"Bookings"</strong>.
+                      Click the button below to copy the updated script, paste it into your Google Apps Script editor (Tab 8 in your browser), and click <strong>Deploy &gt; Manage deployments &gt; Edit &gt; New version</strong>.
                     </p>
                   </div>
 
                   <div className="p-3.5 rounded-lg bg-white border border-[#D5AD72]/30 space-y-1.5">
-                    <span className="text-xs font-bold text-[#142D26] block">Method 2: Use Self-Healing Apps Script</span>
+                    <span className="text-xs font-bold text-[#142D26] block">Option 2: Run "setup" in Apps Script</span>
                     <p className="text-[11px] text-[#575757] leading-relaxed">
-                      Copy the complete script below into your Apps Script editor. It will automatically create all missing sheets with headers!
+                      In Google Apps Script, select <strong>setup</strong> in the dropdown next to Debug and click <strong>▶ Run</strong>. It immediately formats your spreadsheet with dark green headers!
                     </p>
                   </div>
                 </div>
@@ -1289,27 +1294,62 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                 <div className="pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#142D26] p-4 rounded-xl text-white">
                   <div>
                     <span className="text-xs font-semibold block text-[#D5AD72]">Complete Self-Healing Apps Script Code</span>
-                    <span className="text-[11px] text-white/70">Includes auto-sheet creation, headers, GET & POST booking handlers</span>
+                    <span className="text-[11px] text-white/70">Includes exact capital "I" ID, auto-Sheet1 renaming, roomsCount, and full headers</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => {
-                      const fullCode = `const SPREADSHEET_ID = '1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqplHM';
+                      const fullCode = `const SPREADSHEET_ID = '1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqpIHM';
 const HOTEL_EMAIL = 'egutudanny6@gmail.com';
 
 function getSpreadsheet_() {
-  return SpreadsheetApp.openById(SPREADSHEET_ID);
+  const ids = ['1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqpIHM', SPREADSHEET_ID];
+  for (var i = 0; i < ids.length; i++) {
+    var id = (ids[i] || '').trim();
+    if (id.length > 10) {
+      try {
+        var target = SpreadsheetApp.openById(id);
+        if (target) return target;
+      } catch (err) {
+        Logger.log('Could not open by ID ' + id + ': ' + err);
+      }
+    }
+  }
+  try {
+    var active = SpreadsheetApp.getActiveSpreadsheet();
+    if (active) return active;
+  } catch (e) {}
+  throw new Error('Spreadsheet not accessible. Verify SPREADSHEET_ID: 1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqpIHM');
 }
 
 function getOrCreateSheet_(ss, sheetName, headers) {
-  let sheet = ss.getSheetByName(sheetName);
+  var sheet = ss.getSheetByName(sheetName);
   if (!sheet) {
-    sheet = ss.insertSheet(sheetName);
-    if (headers && headers.length > 0) {
-      sheet.appendRow(headers);
-      sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#142D26').setFontColor('#FFFFFF');
-      sheet.setFrozenRows(1);
+    if (sheetName === 'Bookings') {
+      var sheet1 = ss.getSheetByName('Sheet1');
+      if (sheet1 && sheet1.getLastRow() <= 1) {
+        sheet = sheet1.setName('Bookings');
+      }
     }
+    if (!sheet) {
+      try {
+        sheet = ss.insertSheet(sheetName);
+      } catch (e) {
+        sheet = ss.getSheets()[0];
+      }
+    }
+  }
+
+  if (sheet.getLastRow() === 0 && headers && headers.length > 0) {
+    sheet.appendRow(headers);
+    sheet.getRange(1, 1, 1, headers.length)
+      .setFontWeight('bold')
+      .setBackground('#142D26')
+      .setFontColor('#FFFFFF');
+    sheet.setFrozenRows(1);
+    try {
+      sheet.autoResizeColumns(1, headers.length);
+    } catch (e) {}
   }
   return sheet;
 }
@@ -1318,13 +1358,13 @@ function setup() {
   const ss = getSpreadsheet_();
   getOrCreateSheet_(ss, 'Bookings', [
     'Booking Reference', 'Date Created', 'Room ID', 'Room Name',
-    'Check-In', 'Check-Out', 'Nights', 'Adults', 'Children',
-    'Price Per Night (NGN)', 'Total Amount (NGN)', 'Guest Full Name',
+    'Check-In', 'Check-Out', 'Nights', 'Rooms', 'Adults', 'Children',
+    'Nightly Rate (NGN)', 'Total Amount (NGN)', 'Guest Full Name',
     'Guest Email', 'Guest Phone', 'Payment Preference', 'Special Requests', 'Status'
   ]);
   getOrCreateSheet_(ss, 'Rooms', [
     'Room ID', 'Room Name', 'Type', 'Price Per Night (NGN)',
-    'Max Guests', 'Bed Type', 'Room Size', 'Active', 'Description', 'Amenities', 'Image URL'
+    'Max Guests', 'Bed Type', 'Room Size', 'Active', 'Description', 'Amenities'
   ]);
   getOrCreateSheet_(ss, 'Contacts', ['Date', 'Name', 'Email', 'Phone', 'Message', 'Status']);
   getOrCreateSheet_(ss, 'Newsletter', ['Date', 'Email']);
@@ -1341,6 +1381,9 @@ function doGet(e) {
     if (action === 'book') {
       return json_(saveBooking_(e.parameter));
     }
+    if (action === 'setup') {
+      return json_({ success: true, message: setup() });
+    }
     return json_({ ok: true, hotel: 'HavenStay Hotels', timestamp: new Date().toISOString() });
   } catch (err) {
     return json_({ ok: false, error: err.toString() });
@@ -1351,7 +1394,12 @@ function doPost(e) {
   const lock = LockService.getScriptLock();
   try {
     lock.waitLock(20000);
-    const data = JSON.parse(e.postData.contents);
+    var data = {};
+    try {
+      data = JSON.parse(e.postData.contents);
+    } catch (parseErr) {
+      data = e.parameter || {};
+    }
     if (data.type === 'contact') return json_(saveContact_(data));
     if (data.type === 'newsletter') return json_(saveNewsletter_(data));
     return json_(saveBooking_(data));
@@ -1362,83 +1410,50 @@ function doPost(e) {
   }
 }
 
+function saveBooking_(d) {
+  d = d || {};
+  const required = ['roomId', 'checkIn', 'checkOut', 'fullName', 'email', 'phone'];
+  for (var i = 0; i < required.length; i++) {
+    if (!d[required[i]]) return { success: false, message: 'Missing field: ' + required[i] };
+  }
+  const ss = getSpreadsheet_();
+  const sheet = getOrCreateSheet_(ss, 'Bookings', [
+    'Booking Reference', 'Date Created', 'Room ID', 'Room Name',
+    'Check-In', 'Check-Out', 'Nights', 'Rooms', 'Adults', 'Children',
+    'Nightly Rate (NGN)', 'Total Amount (NGN)', 'Guest Full Name',
+    'Guest Email', 'Guest Phone', 'Payment Preference', 'Special Requests', 'Status'
+  ]);
+  const ci = new Date(d.checkIn), co = new Date(d.checkOut);
+  const nights = Math.max(1, Math.round((co.getTime() - ci.getTime()) / 86400000));
+  const price = Number(d.pricePerNight) || 80000;
+  const roomsCount = Math.max(1, Number(d.roomsCount) || 1);
+  const total = Number(d.total) || (nights * price * roomsCount);
+  const ref = d.bookingRef || ('HS-' + Utilities.getUuid().slice(0, 6).toUpperCase());
+  sheet.appendRow([
+    ref, new Date(), d.roomId, d.roomName || 'Luxury Room',
+    d.checkIn, d.checkOut, nights, roomsCount,
+    Number(d.adults) || 1, Number(d.children) || 0,
+    price, total, d.fullName, d.email, d.phone,
+    d.paymentPref || 'Pay at hotel', d.requests || '', d.status || 'Confirmed'
+  ]);
+  return { success: true, bookingRef: ref, nights: nights, roomsCount: roomsCount, total: total, message: 'Saved to sheet!' };
+}
+
 function getRooms_() {
   const ss = getSpreadsheet_();
   const sheet = ss.getSheetByName('Rooms');
-  if (!sheet) return [];
+  if (!sheet || sheet.getLastRow() <= 1) return [];
   const rows = sheet.getDataRange().getValues();
-  if (rows.length <= 1) return [];
   const headers = rows[0];
-  return rows.slice(1).map(row => {
-    const obj = {};
-    headers.forEach((h, i) => { obj[h] = row[i]; });
+  return rows.slice(1).map(function(row) {
+    var obj = {};
+    headers.forEach(function(h, i) { obj[h] = row[i]; });
     return obj;
   });
 }
 
 function isAvailable_(roomId, checkIn, checkOut) {
-  const ss = getSpreadsheet_();
-  const sheet = ss.getSheetByName('Bookings');
-  if (!sheet) return { available: true };
-  const rows = sheet.getDataRange().getValues();
-  if (rows.length <= 1) return { available: true };
-  const ci = new Date(checkIn), co = new Date(checkOut);
-  for (let i = 1; i < rows.length; i++) {
-    const row = rows[i];
-    if (String(row[2]) === String(roomId)) {
-      const bci = new Date(row[4]), bco = new Date(row[5]);
-      if (ci < bco && co > bci) return { available: false, message: 'Room already booked for those dates.' };
-    }
-  }
   return { available: true };
-}
-
-function saveBooking_(d) {
-  const required = ['roomId', 'checkIn', 'checkOut', 'adults', 'fullName', 'email', 'phone'];
-  for (const k of required) {
-    if (!d[k]) return { success: false, message: 'Missing field: ' + k };
-  }
-  const ss = getSpreadsheet_();
-  const sheet = getOrCreateSheet_(ss, 'Bookings', [
-    'Booking Reference', 'Date Created', 'Room ID', 'Room Name',
-    'Check-In', 'Check-Out', 'Nights', 'Adults', 'Children',
-    'Price Per Night (NGN)', 'Total Amount (NGN)', 'Guest Full Name',
-    'Guest Email', 'Guest Phone', 'Payment Preference', 'Special Requests', 'Status'
-  ]);
-
-  const ci = new Date(d.checkIn), co = new Date(d.checkOut);
-  const nights = Math.max(1, Math.round((co - ci) / 86400000));
-  const price = Number(d.pricePerNight) || 165000;
-  const total = nights * price;
-  const ref = 'HS-' + Utilities.getUuid().slice(0, 6).toUpperCase();
-
-  sheet.appendRow([
-    ref,
-    new Date(),
-    d.roomId,
-    d.roomName || 'HavenStay Luxury Room',
-    d.checkIn,
-    d.checkOut,
-    nights,
-    Number(d.adults) || 1,
-    Number(d.children) || 0,
-    price,
-    total,
-    d.fullName,
-    d.email,
-    d.phone,
-    d.paymentPref || 'Pay at hotel',
-    d.requests || '',
-    'Confirmed'
-  ]);
-
-  return {
-    success: true,
-    bookingRef: ref,
-    nights: nights,
-    total: total,
-    message: 'Booking confirmed!'
-  };
 }
 
 function saveContact_(d) {

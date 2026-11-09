@@ -38,9 +38,14 @@ export const RoomCard: React.FC<RoomCardProps> = ({
       {/* Room Image Container with 5% zoom on hover */}
       <div className="relative aspect-[16/10] overflow-hidden bg-[#ECE8DE]">
         <img
-          src={room.ImageURL}
+          src={room.ImageURL || '/images/hotel/deluxe-1.jpg'}
           alt={room.Name}
           loading="lazy"
+          onError={(e) => {
+            const target = e.currentTarget as HTMLImageElement;
+            target.onerror = null;
+            target.src = '/images/hotel/deluxe-1.jpg';
+          }}
           className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
         />
 

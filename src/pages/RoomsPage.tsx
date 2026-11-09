@@ -96,8 +96,10 @@ export const RoomsPage: React.FC<RoomsPageProps> = ({
           return false;
         }
 
-        // Guests capacity filter
-        if (room.MaxGuests < minGuests) {
+        // Guests capacity filter (considers number of rooms booked)
+        const roomsMultiplier = searchParams.roomsCount || 1;
+        const totalCapacity = room.MaxGuests * roomsMultiplier;
+        if (totalCapacity < minGuests) {
           return false;
         }
 
@@ -319,7 +321,7 @@ export const RoomsPage: React.FC<RoomsPageProps> = ({
                   </div>
                   <input
                     type="range"
-                    min={100000}
+                    min={50000}
                     max={500000}
                     step={10000}
                     value={maxPrice}
@@ -327,7 +329,7 @@ export const RoomsPage: React.FC<RoomsPageProps> = ({
                     className="w-full accent-[#142D26] cursor-pointer"
                   />
                   <div className="flex justify-between text-[11px] text-[#575757] mt-1">
-                    <span>₦100,000</span>
+                    <span>₦50,000</span>
                     <span>₦500,000+</span>
                   </div>
                 </div>

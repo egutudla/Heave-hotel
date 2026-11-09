@@ -21,6 +21,7 @@ interface BookingRecord {
   checkIn: string;
   checkOut: string;
   nights: number;
+  roomsCount?: number;
   adults: number;
   children: number;
   fullName: string;
@@ -387,7 +388,7 @@ app.get('/api/admin/contacts', requireAdminAuth, (req, res) => {
 
 // POST /api/bookings (Public customer reservation submission)
 app.post('/api/bookings', async (req, res) => {
-  const { roomId, checkIn, checkOut, adults, children, fullName, email, phone, requests, paymentPref } = req.body;
+  const { roomId, checkIn, checkOut, adults, children, roomsCount: rawRooms, fullName, email, phone, requests, paymentPref } = req.body;
 
   if (!roomId || !checkIn || !checkOut || !fullName || !email || !phone) {
     return res.status(400).json({ success: false, message: 'Please complete all required reservation fields.' });
@@ -396,8 +397,12 @@ app.post('/api/bookings', async (req, res) => {
   const ci = new Date(checkIn);
   const co = new Date(checkOut);
   const nights = Math.max(1, Math.round((co.getTime() - ci.getTime()) / 86400000));
-  const pricePerNight = Number(req.body.pricePerNight) || 165000;
-  const total = nights * pricePerNight;
+  const pricePerNight = Number(req.body.pricePerNight) || 80000;
+  const roomsCount = Math.max(1, Number(rawRooms) || 1);
+
+  // STRICT PRICING RULE: Room Price Per Night * Number of Nights * Number of Rooms
+  // Adults or children NEVER multiply the room price.
+  const total = pricePerNight * nights * roomsCount;
   const ref = 'HS-' + crypto.randomBytes(3).toString('hex').toUpperCase();
 
   const newReservation: BookingRecord = {
@@ -406,6 +411,7 @@ app.post('/api/bookings', async (req, res) => {
     roomId,
     roomName: req.body.roomName || 'HavenStay Luxury Room',
     pricePerNight,
+    roomsCount,
     checkIn,
     checkOut,
     nights,
@@ -424,15 +430,45 @@ app.post('/api/bookings', async (req, res) => {
   // Add to shared memory store (Instantly visible in Admin Management Portal!)
   reservationsStore.unshift(newReservation);
 
-  // Asynchronously relay to Google Apps Script if configured
+  // Asynchronously relay to Google Apps Script
   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzqG6y5pbnm59u-7j0FGZX35rezq_nhmxEECXVAhYLNxNEILaar_VZfJgdUX-YN5SDa/exec';
-  try {
-    fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(newReservation),
-    }).catch(() => {});
-  } catch {}
+  (async () => {
+    try {
+      // 1. Send via GET query parameters (bypasses Google Apps Script POST auth redirect)
+      const query = new URLSearchParams({
+        action: 'book',
+        bookingRef: newReservation.bookingRef,
+        roomId: newReservation.roomId,
+        roomName: newReservation.roomName,
+        pricePerNight: String(newReservation.pricePerNight),
+        checkIn: newReservation.checkIn,
+        checkOut: newReservation.checkOut,
+        nights: String(newReservation.nights),
+        roomsCount: String(roomsCount),
+        total: String(total),
+        adults: String(newReservation.adults),
+        children: String(newReservation.children || 0),
+        fullName: newReservation.fullName,
+        email: newReservation.email,
+        phone: newReservation.phone,
+        paymentPref: newReservation.paymentPref,
+        requests: newReservation.requests || '',
+      });
+      const getRes = await fetch(`${APPS_SCRIPT_URL}?${query.toString()}`, { redirect: 'follow' });
+      const getText = await getRes.text().catch(() => '');
+      console.log('Google Apps Script GET relay result:', getRes.status, getText.slice(0, 120));
+
+      // 2. Also try POST with text/plain
+      await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(newReservation),
+        redirect: 'follow',
+      }).catch(() => {});
+    } catch (relayErr) {
+      console.warn('Google Apps Script relay notice:', relayErr);
+    }
+  })();
 
   return res.json({
     success: true,

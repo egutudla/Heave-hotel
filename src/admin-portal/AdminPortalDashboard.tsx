@@ -646,7 +646,7 @@ export const AdminPortalDashboard: React.FC<AdminPortalDashboardProps> = ({ onLo
 
             {/* Direct Google Sheets Link */}
             <a
-              href="https://docs.google.com/spreadsheets/d/1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqplHM/edit"
+              href="https://docs.google.com/spreadsheets/d/1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqpIHM/edit"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:border-emerald-500/50 text-emerald-400 text-xs transition-colors"
@@ -1023,8 +1023,13 @@ export const AdminPortalDashboard: React.FC<AdminPortalDashboardProps> = ({ onLo
                     <div>
                       <div className="relative aspect-[16/10] overflow-hidden bg-black/40">
                         <img
-                          src={room.ImageURL}
+                          src={room.ImageURL || '/images/hotel/deluxe-1.jpg'}
                           alt={room.Name}
+                          onError={(e) => {
+                            const target = e.currentTarget as HTMLImageElement;
+                            target.onerror = null;
+                            target.src = '/images/hotel/deluxe-1.jpg';
+                          }}
                           className="w-full h-full object-cover"
                           referrerPolicy="no-referrer"
                         />
@@ -1465,7 +1470,7 @@ export const AdminPortalDashboard: React.FC<AdminPortalDashboardProps> = ({ onLo
                     <h3 className="font-serif font-bold text-white text-base">Google Sheets Integration</h3>
                   </div>
                   <p className="text-xs text-white/60">
-                    Target Spreadsheet ID: <code className="text-[#D5AD72]">1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqplHM</code>
+                    Target Spreadsheet ID: <code className="text-[#D5AD72]">1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqpIHM</code>
                   </p>
                   <div className="p-3 rounded-lg bg-black/40 border border-white/5 text-[11px] space-y-1 font-mono text-white/70">
                     <div>Status: Connected via Google Apps Script Web App</div>
@@ -1481,7 +1486,7 @@ export const AdminPortalDashboard: React.FC<AdminPortalDashboardProps> = ({ onLo
                       {pingLoading ? 'Testing Live Connection...' : 'Test Connection Latency'}
                     </button>
                     <a
-                      href="https://docs.google.com/spreadsheets/d/1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqplHM/edit"
+                      href="https://docs.google.com/spreadsheets/d/1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqpIHM/edit"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-xs font-semibold hover:bg-white/10"

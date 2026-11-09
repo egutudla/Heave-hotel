@@ -33,10 +33,19 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({
 
   if (!room || !isOpen) return null;
 
-  const allImages = [
+  const defaultImages = [
+    '/images/hotel/deluxe-1.jpg',
+    '/images/hotel/presidential-1.jpg',
+    '/images/hotel/executive-suite-1.jpg',
+    '/images/hotel/pool-1.jpg',
+  ];
+
+  const rawImages = [
     room.ImageURL,
     ...(room.AdditionalImages || []),
-  ].filter(Boolean);
+  ].filter((img): img is string => typeof img === 'string' && img.trim().length > 3);
+
+  const allImages = rawImages.length > 0 ? rawImages : defaultImages;
 
   const amenityList = room.Amenities
     ? room.Amenities.split(',').map((a) => a.trim()).filter(Boolean)
@@ -100,12 +109,17 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({
                 <AnimatePresence mode="wait">
                   <motion.img
                     key={activeImageIndex}
-                    src={allImages[activeImageIndex]}
+                    src={allImages[activeImageIndex] || '/images/hotel/deluxe-1.jpg'}
                     alt={`${room.Name} view ${activeImageIndex + 1}`}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.35, ease: 'easeOut' }}
+                    onError={(e) => {
+                      const target = e.currentTarget as HTMLImageElement;
+                      target.onerror = null;
+                      target.src = '/images/hotel/deluxe-1.jpg';
+                    }}
                     className="w-full h-full object-cover"
                   />
                 </AnimatePresence>

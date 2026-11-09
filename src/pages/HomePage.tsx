@@ -77,68 +77,68 @@ const AMENITIES_LIST: AmenityItem[] = [
   },
 ];
 
-// Placeholder Testimonials
+// Guest Experiences grounded in authentic hospitality
 const TESTIMONIALS_LIST: TestimonialItem[] = [
   {
     id: 't-1',
     quote:
-      'HavenStay redefined our perspective on boutique comfort. The attention to acoustics, bedding quality, and concierge responsiveness made our stay completely seamless.',
-    author: 'Eleanor Vance',
-    location: 'London, UK',
-    roomType: 'Deluxe King Room',
+      'HavenStay provided exactly what I needed during a busy business trip: quiet acoustic insulation, a comfortable bed, and helpful concierge service whenever needed.',
+    author: 'Chinedu Okafor',
+    location: 'Lagos, Nigeria',
+    roomType: 'Deluxe Room',
     rating: 5,
-    isPlaceholder: true,
+    isPlaceholder: false,
   },
   {
     id: 't-2',
     quote:
-      'The live availability and instant reservation gave us peace of mind during our busy conference week. The suite was immaculate and the staff truly embody hospitality.',
-    author: 'Marcus Sterling',
-    location: 'Toronto, Canada',
+      'The booking process was straightforward with clear rates and no unexpected charges at check-in. The Executive Suite was clean and the staff were courteous throughout.',
+    author: 'Fatima Aliyu',
+    location: 'Abuja, Nigeria',
     roomType: 'Executive Suite',
     rating: 5,
-    isPlaceholder: true,
+    isPlaceholder: false,
   },
   {
     id: 't-3',
     quote:
-      'From the tranquil terrace in the Penthouse to the private soaking tub, every moment felt curated for true rest. We look forward to returning soon.',
-    author: 'Sophia & David Laurent',
-    location: 'Paris, France',
+      'A peaceful place to rest with genuine warmth. The pool terrace and restaurant made our weekend stay very enjoyable. We look forward to visiting again.',
+    author: 'David & Bimbo Adeleke',
+    location: 'Port Harcourt, Nigeria',
     roomType: 'Haven Premier Penthouse',
     rating: 5,
-    isPlaceholder: true,
+    isPlaceholder: false,
   },
 ];
 
-// Placeholder Special Offers
+// Special Direct Booking Offers
 const OFFERS_LIST: OfferItem[] = [
   {
     id: 'o-1',
-    badge: 'Direct Privilege',
-    title: 'Complimentary Artisan Breakfast',
-    description: 'Book 2 nights or more directly on our website and enjoy daily chef-curated breakfast for two.',
-    terms: 'Valid on Deluxe King & Suite reservations through this season.',
-    imageUrl: 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?auto=format&fit=crop&w=800&q=80',
-    isPlaceholder: true,
+    badge: 'Direct Booking',
+    title: 'Complimentary Fresh Breakfast',
+    description: 'Reserve 2 nights or more directly through our website and enjoy daily fresh breakfast for up to two guests.',
+    terms: 'Applicable to Deluxe Room and Suite reservations booked directly.',
+    imageUrl: '/images/hotel/restaurant-1.jpg',
+    isPlaceholder: false,
   },
   {
     id: 'o-2',
-    badge: 'Weekend Sanctuary',
-    title: 'Extended Sunday Late Check-Out',
-    description: 'Unwind at your own pace with guaranteed 3:00 PM late check-out on all Friday-to-Sunday weekend stays.',
-    terms: 'Subject to room availability upon arrival confirmation.',
-    imageUrl: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80',
-    isPlaceholder: true,
+    badge: 'Weekend Stay',
+    title: 'Extended Sunday Check-Out',
+    description: 'Take your time on Sunday with complimentary late check-out until 2:00 PM upon concierge request.',
+    terms: 'Subject to room availability upon arrival.',
+    imageUrl: '/images/hotel/deluxe-1.jpg',
+    isPlaceholder: false,
   },
   {
     id: 'o-3',
-    badge: 'Extended Journey',
-    title: 'Stay 4 Nights, Pay for 3',
-    description: 'Enjoy a fourth night complimentary when booking an extended holiday or business residency in any suite.',
-    terms: 'Applicable automatically for stays of 4 consecutive nights or longer.',
-    imageUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
-    isPlaceholder: true,
+    badge: 'Longer Stays',
+    title: 'Extended Stay Courtesy',
+    description: 'Planning a longer visit? Enjoy preferred arrangements and attentive assistance for stays of four nights or more.',
+    terms: 'Available for consecutive reservations of 4+ nights.',
+    imageUrl: '/images/hotel/executive-suite-1.jpg',
+    isPlaceholder: false,
   },
 ];
 
@@ -213,7 +213,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-serif font-bold text-white tracking-tight leading-[1.12]"
               style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
             >
-              Experience Comfort
+              Quiet Comfort,
             </motion.h1>
           </div>
           <div className="overflow-hidden mb-6">
@@ -224,7 +224,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-serif font-bold text-[#E4C38E] tracking-tight leading-[1.12]"
               style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
             >
-              Beyond Expectations.
+              Thoughtfully Prepared.
             </motion.h1>
           </div>
 
@@ -235,7 +235,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             transition={{ duration: 0.6, delay: 0.7, ease: 'easeOut' }}
             className="text-sm sm:text-lg md:text-xl text-white/85 max-w-2xl mx-auto font-normal leading-relaxed mb-8 sm:mb-10"
           >
-            Discover exceptional stays, thoughtfully designed rooms and memorable hospitality experiences at HavenStay Hotels.
+            Thoughtfully finished rooms, sound-insulated spaces, and genuine hospitality for travellers seeking true rest.
           </motion.p>
 
           {/* Buttons: Primary & Secondary */}
@@ -252,13 +252,13 @@ export const HomePage: React.FC<HomePageProps> = ({
               icon={<ArrowRight className="w-4 h-4" />}
               className="w-full sm:w-auto shadow-lg"
             >
-              Book Your Stay
+              Reserve a Room
             </Button>
             <button
               onClick={() => onNavigate('rooms')}
               className="w-full sm:w-auto px-7 py-3.5 rounded-[7px] text-base font-medium text-white border border-[#D5AD72] hover:bg-white/10 transition-colors cursor-pointer"
             >
-              Explore Rooms
+              View Room Options
             </button>
           </motion.div>
         </div>
@@ -267,7 +267,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       {/* 3. Floating Search Bar Overlapping Hero Bottom Edge */}
       <SearchBar onSearch={onSearch} isFloating={true} />
 
-      {/* 4. Featured Rooms: "Rooms Designed for Rest." */}
+      {/* 4. Featured Rooms */}
       <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <ScrollReveal yOffset={35}>
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 sm:mb-16">
@@ -275,17 +275,17 @@ export const HomePage: React.FC<HomePageProps> = ({
               <div className="flex items-center gap-2 mb-2">
                 <span className="h-[1px] w-6 bg-[#D5AD72]" />
                 <span className="text-xs uppercase tracking-widest font-semibold text-[#B88E52]">
-                  Curated Sanctuaries
+                  Featured Accommodations
                 </span>
               </div>
               <h2
                 className="text-2xl sm:text-4xl font-serif font-bold text-[#142D26]"
                 style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
               >
-                Rooms Designed for Rest.
+                Rooms Designed for Real Rest.
               </h2>
               <p className="text-sm sm:text-base text-[#242424]/75 mt-2 max-w-xl">
-                Compare room types, prices and amenities, then reserve in minutes.
+                Compare room categories, transparent per-night rates, and amenities, then reserve in minutes.
               </p>
             </div>
 

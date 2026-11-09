@@ -124,6 +124,7 @@ function CustomerWebsiteApp() {
     checkOut: dayAfter.toISOString().split('T')[0],
     adults: 2,
     children: 0,
+    roomsCount: 1,
   });
 
   // Modals state

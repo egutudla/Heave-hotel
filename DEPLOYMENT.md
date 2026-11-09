@@ -62,7 +62,7 @@ You can deploy both applications from this single GitHub repository to Netlify:
 ---
 
 ## Google Sheets & Apps Script Integration
-- **Target Spreadsheet ID**: `1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqplHM`
+- **Target Spreadsheet ID**: `1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqpIHM`
 - **Google Apps Script Web App**:
   `https://script.google.com/macros/s/AKfycbzqG6y5pbnm59u-7j0FGZX35rezq_nhmxEECXVAhYLNxNEILaar_VZfJgdUX-YN5SDa/exec`
 - **Spreadsheet Tabs Required**:
