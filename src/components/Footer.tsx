@@ -36,148 +36,151 @@ export const Footer: React.FC<FooterProps> = ({
             </div>
           </div>
 
-          {/* Column 1: Main Navigation (3 cols) */}
-          <div className="lg:col-span-3 space-y-3.5 pl-0 lg:pl-6">
-            <h4
-              className="font-serif font-semibold text-white tracking-wider text-sm uppercase"
-              style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-            >
-              Navigation
-            </h4>
-            <ul className="space-y-2.5 text-xs sm:text-sm text-white/75 font-normal">
-              <li>
-                <button
-                  onClick={() => onNavigate('home')}
-                  className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
-                >
-                  Home
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('about')}
-                  className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
-                >
-                  About Us
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('rooms')}
-                  className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
-                >
-                  Rooms & Suites
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('dining')}
-                  className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
-                >
-                  Sofia Restaurant
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('pool-bar')}
-                  className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
-                >
-                  Palms Pool & Sunset Bar
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('events')}
-                  className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
-                >
-                  Events & Weddings
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('offers')}
-                  className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
-                >
-                  Offers & Packages
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('gallery')}
-                  className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
-                >
-                  Visual Gallery
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('contact')}
-                  className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
-                >
-                  Contact Concierge
-                </button>
-              </li>
-            </ul>
-          </div>
+          {/* Column 1 & 2: Navigation and Accommodations (side-by-side on mobile, 3 cols each on lg) */}
+          <div className="grid grid-cols-2 gap-6 sm:gap-8 lg:col-span-6">
+            {/* Column 1: Main Navigation */}
+            <div className="space-y-3.5 pl-0 lg:pl-6">
+              <h4
+                className="font-serif font-semibold text-white tracking-wider text-sm uppercase"
+                style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+              >
+                Navigation
+              </h4>
+              <ul className="space-y-2.5 text-xs sm:text-sm text-white/75 font-normal">
+                <li>
+                  <button
+                    onClick={() => onNavigate('home')}
+                    className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
+                  >
+                    Home
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate('about')}
+                    className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
+                  >
+                    About Us
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate('rooms')}
+                    className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
+                  >
+                    Rooms & Suites
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate('dining')}
+                    className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
+                  >
+                    Sofia Restaurant
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate('pool-bar')}
+                    className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
+                  >
+                    Palms Pool & Sunset Bar
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate('events')}
+                    className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
+                  >
+                    Events & Weddings
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate('offers')}
+                    className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
+                  >
+                    Offers & Packages
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate('gallery')}
+                    className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
+                  >
+                    Visual Gallery
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate('contact')}
+                    className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
+                  >
+                    Contact Concierge
+                  </button>
+                </li>
+              </ul>
+            </div>
 
-          {/* Column 2: Experiences & Suites (3 cols) */}
-          <div className="lg:col-span-3 space-y-3.5">
-            <h4
-              className="font-serif font-semibold text-white tracking-wider text-sm uppercase"
-              style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-            >
-              Accommodations
-            </h4>
-            <ul className="space-y-2.5 text-xs sm:text-sm text-white/75 font-normal">
-              <li>
-                <button
-                  onClick={() => onNavigate('rooms')}
-                  className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
-                >
-                  Deluxe King Room
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('rooms')}
-                  className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
-                >
-                  Executive Suite
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('rooms')}
-                  className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
-                >
-                  Haven Premier Penthouse
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('rooms')}
-                  className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
-                >
-                  Superior Ocean View
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('rooms')}
-                  className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
-                >
-                  Family Garden Suite
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('rooms')}
-                  className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
-                >
-                  Classic Queen Sanctuary
-                </button>
-              </li>
-            </ul>
+            {/* Column 2: Experiences & Suites */}
+            <div className="space-y-3.5">
+              <h4
+                className="font-serif font-semibold text-white tracking-wider text-sm uppercase"
+                style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+              >
+                Accommodations
+              </h4>
+              <ul className="space-y-2.5 text-xs sm:text-sm text-white/75 font-normal">
+                <li>
+                  <button
+                    onClick={() => onNavigate('rooms')}
+                    className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
+                  >
+                    Deluxe King Room
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate('rooms')}
+                    className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
+                  >
+                    Executive Suite
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate('rooms')}
+                    className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
+                  >
+                    Haven Premier Penthouse
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate('rooms')}
+                    className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
+                  >
+                    Superior Ocean View
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate('rooms')}
+                    className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
+                  >
+                    Family Garden Suite
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate('rooms')}
+                    className="hover:text-[#D5AD72] transition-colors cursor-pointer text-left"
+                  >
+                    Classic Queen Sanctuary
+                  </button>
+                </li>
+              </ul>
+            </div>
           </div>
 
           {/* Column 3: Contact & Direct Location Details (3 cols) */}

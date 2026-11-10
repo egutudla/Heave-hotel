@@ -5,7 +5,6 @@ import {
   Users,
   Maximize2,
   Check,
-  Calendar,
   Sparkles,
   ChevronLeft,
   ChevronRight,
@@ -273,18 +272,23 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <Button variant="secondary" size="md" onClick={onClose}>
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={onClose}
+                className="!min-h-[36px] !py-1.5 !px-3.5 text-xs font-medium"
+              >
                 Close
               </Button>
               <Button
                 variant="gold"
-                size="md"
+                size="sm"
+                className="!min-h-[36px] !py-1.5 !px-4 text-xs font-semibold"
                 onClick={() => {
                   onClose();
                   onReserve(room);
                 }}
-                icon={<Calendar className="w-4 h-4" />}
               >
                 Reserve Now
               </Button>

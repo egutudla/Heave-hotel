@@ -241,10 +241,6 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
             </span>
           </div>
         </div>
-
-        <span className="text-[11px] font-medium text-[#B88E52] shrink-0 bg-white/70 px-2 py-0.5 rounded border border-[#D5AD72]/30">
-          {isOpen ? 'Close' : 'Change'}
-        </span>
       </button>
 
       {helperText && !error && <p className="text-[11px] text-stone-500">{helperText}</p>}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Menu, X, Calendar, Phone, ChevronRight, MessageCircle } from 'lucide-react';
+import { Menu, X, Phone, ChevronRight, MessageCircle } from 'lucide-react';
 import { HavenStayLogo } from './HavenStayLogo';
 import { Button } from './Button';
 
@@ -219,7 +219,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                       handleNavClick('rooms');
                     }
                   }}
-                  icon={<Calendar className="w-4 h-4" />}
                 >
                   Reserve Your Stay
                 </Button>
