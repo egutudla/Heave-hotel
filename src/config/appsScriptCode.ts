@@ -149,6 +149,15 @@ function doGet(e) {
     if (action === 'setup') {
       return json_({ success: true, message: setup() });
     }
+    if (action === 'bookings' || action === 'reservations') {
+      return json_(getBookings_());
+    }
+    if (action === 'update_status') {
+      return json_(updateBookingStatus_(e.parameter));
+    }
+    if (action === 'delete_booking') {
+      return json_(deleteBooking_(e.parameter));
+    }
     if (action === 'ping') {
       const ss = getSpreadsheet_();
       return json_({
@@ -328,6 +337,123 @@ function saveNewsletter_(d) {
   const sheet = getOrCreateSheet_(ss, 'Newsletter', ['Date', 'Email']);
   sheet.appendRow([new Date(), d.email]);
   return { success: true };
+}
+
+function getBookings_() {
+  const ss = getSpreadsheet_();
+  var sheet = ss.getSheetByName('Bookings') || ss.getSheetByName('Sheet1') || ss.getSheets()[0];
+  if (!sheet || sheet.getLastRow() <= 1) {
+    return { success: true, reservations: [] };
+  }
+
+  var data = sheet.getDataRange().getValues();
+  var headers = data[0].map(function(h) { return String(h).trim(); });
+  var rows = data.slice(1);
+
+  var bookings = rows.map(function(row, idx) {
+    var obj = {};
+    for (var i = 0; i < headers.length; i++) {
+      obj[headers[i]] = row[i];
+    }
+
+    var ref = obj['Booking Reference'] || obj['Reference'] || obj['bookingRef'] || ('HS-ROW' + (idx + 2));
+    var rawTotal = obj['Total Amount (NGN)'] || obj['Total Amount'] || obj['Total ($)'] || obj['Total'] || 0;
+    var totalVal = Number(String(rawTotal).replace(/[^0-9.]/g, '')) || 0;
+
+    return {
+      id: String(ref),
+      bookingRef: String(ref),
+      roomId: String(obj['Room ID'] || 'ROOM-101'),
+      roomName: String(obj['Room Name'] || 'Deluxe King Room'),
+      checkIn: formatDateStr_(obj['Check-In']),
+      checkOut: formatDateStr_(obj['Check-Out']),
+      nights: Number(obj['Nights'] || 1),
+      roomsCount: Number(obj['Rooms'] || obj['roomsCount'] || 1),
+      adults: Number(obj['Adults'] || 1),
+      children: Number(obj['Children'] || 0),
+      pricePerNight: Number(String(obj['Nightly Rate (NGN)'] || obj['Price Per Night'] || 0).replace(/[^0-9.]/g, '')) || 0,
+      total: totalVal,
+      fullName: String(obj['Guest Full Name'] || obj['Full Name'] || 'Guest'),
+      email: String(obj['Guest Email'] || obj['Email'] || ''),
+      phone: String(obj['Guest Phone'] || obj['Phone'] || ''),
+      paymentPref: String(obj['Payment Preference'] || 'Pay at hotel'),
+      requests: String(obj['Special Requests'] || ''),
+      status: String(obj['Status'] || 'Pending'),
+      createdAt: formatDateStr_(obj['Date Created']) || new Date().toISOString()
+    };
+  });
+
+  return { success: true, reservations: bookings.reverse() };
+}
+
+function formatDateStr_(val) {
+  if (!val) return '';
+  if (val instanceof Date) {
+    return Utilities.formatDate(val, Session.getScriptTimeZone() || 'UTC', 'yyyy-MM-dd');
+  }
+  return String(val);
+}
+
+function updateBookingStatus_(params) {
+  params = params || {};
+  var ref = params.bookingRef || params.ref || params.id;
+  var newStatus = params.status;
+  if (!ref || !newStatus) {
+    return { success: false, message: 'Missing bookingRef or status' };
+  }
+
+  var ss = getSpreadsheet_();
+  var sheet = ss.getSheetByName('Bookings') || ss.getSheetByName('Sheet1') || ss.getSheets()[0];
+  if (!sheet) return { success: false, message: 'Bookings sheet not found' };
+
+  var data = sheet.getDataRange().getValues();
+  var headers = data[0].map(function(h) { return String(h).trim(); });
+  var refColIdx = headers.findIndex(function(h) {
+    return h === 'Booking Reference' || h === 'Reference' || h === 'bookingRef';
+  });
+  var statusColIdx = headers.findIndex(function(h) {
+    return h === 'Status';
+  });
+
+  if (statusColIdx === -1) {
+    statusColIdx = headers.length - 1;
+  }
+
+  for (var r = 1; r < data.length; r++) {
+    var rowRef = refColIdx !== -1 ? String(data[r][refColIdx]).trim() : '';
+    if (rowRef === String(ref).trim() || ('HS-ROW' + (r + 1)) === String(ref).trim()) {
+      sheet.getRange(r + 1, statusColIdx + 1).setValue(newStatus);
+      return { success: true, message: 'Status updated to ' + newStatus, bookingRef: ref };
+    }
+  }
+
+  return { success: false, message: 'Booking reference not found: ' + ref };
+}
+
+function deleteBooking_(params) {
+  params = params || {};
+  var ref = params.bookingRef || params.ref || params.id;
+  if (!ref) return { success: false, message: 'Missing bookingRef' };
+
+  var ss = getSpreadsheet_();
+  var sheet = ss.getSheetByName('Bookings') || ss.getSheetByName('Sheet1') || ss.getSheets()[0];
+  if (!sheet) return { success: false, message: 'Bookings sheet not found' };
+
+  var data = sheet.getDataRange().getValues();
+  var headers = data[0].map(function(h) { return String(h).trim(); });
+  var refColIdx = headers.findIndex(function(h) {
+    return h === 'Booking Reference' || h === 'Reference' || h === 'bookingRef';
+  });
+
+  for (var r = 1; r < data.length; r++) {
+    var rowRef = refColIdx !== -1 ? String(data[r][refColIdx]).trim() : '';
+    if (rowRef === String(ref).trim() || ('HS-ROW' + (r + 1)) === String(ref).trim()) {
+      sheet.deleteRow(r + 1);
+      return { success: true, message: 'Reservation removed: ' + ref };
+    }
+  }
+
+  return { success: false, message: 'Booking reference not found: ' + ref };
 }
 
 function json_(obj) {

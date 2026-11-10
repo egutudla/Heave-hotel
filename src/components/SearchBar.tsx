@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Users, Bed, ArrowRight, AlertCircle } from 'lucide-react';
 import { SearchParams } from '../types';
@@ -30,12 +30,28 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   defaultOut.setDate(defaultOut.getDate() + 3);
   const defaultOutStr = defaultOut.toISOString().split('T')[0];
 
-  const [checkIn, setCheckIn] = useState<string>(initialValues?.checkIn || tomorrowStr);
-  const [checkOut, setCheckOut] = useState<string>(initialValues?.checkOut || defaultOutStr);
-  const [adults, setAdults] = useState<number>(initialValues?.adults ?? 2);
-  const [children, setChildren] = useState<number>(initialValues?.children ?? 0);
-  const [roomsCount, setRoomsCount] = useState<number>(initialValues?.roomsCount ?? 1);
+  const [checkIn, setCheckIn] = useState<string>(initialValues?.checkIn || '');
+  const [checkOut, setCheckOut] = useState<string>(initialValues?.checkOut || '');
+  const [adults, setAdults] = useState<number>(initialValues?.adults || 1);
+  const [children, setChildren] = useState<number>(initialValues?.children || 0);
+  const [roomsCount, setRoomsCount] = useState<number>(initialValues?.roomsCount || 1);
   const [errorMsg, setErrorMsg] = useState<string>('');
+
+  // Sync state whenever initialValues reset or update
+  useEffect(() => {
+    setCheckIn(initialValues?.checkIn || '');
+    setCheckOut(initialValues?.checkOut || '');
+    setAdults(initialValues?.adults || 1);
+    setChildren(initialValues?.children || 0);
+    setRoomsCount(initialValues?.roomsCount || 1);
+    setErrorMsg('');
+  }, [
+    initialValues?.checkIn,
+    initialValues?.checkOut,
+    initialValues?.adults,
+    initialValues?.children,
+    initialValues?.roomsCount,
+  ]);
 
   const handleCheckInChange = (newCi: string) => {
     setCheckIn(newCi);
@@ -157,7 +173,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                 value={checkIn}
                 onChange={handleCheckInChange}
                 minDate={todayStr}
-                displayText="Dates"
+                placeholder="Dates"
               />
             </div>
 
@@ -169,7 +185,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                 value={checkOut}
                 onChange={handleCheckOutChange}
                 minDate={minCheckOutDate}
-                displayText="Dates"
+                placeholder="Dates"
               />
             </div>
 

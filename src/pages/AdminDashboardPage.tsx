@@ -44,6 +44,9 @@ import {
   saveStoredBooking,
   updateStoredBookingStatus,
   deleteStoredBooking,
+  fetchAdminReservations,
+  updateAdminReservationStatus,
+  deleteAdminReservation,
   getStoredContacts,
   deleteStoredContact,
   StoredContact,
@@ -136,8 +139,13 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
     }
   }, []);
 
-  const refreshData = () => {
-    setBookings(getStoredBookings());
+  const refreshData = async () => {
+    try {
+      const list = await fetchAdminReservations();
+      setBookings(list);
+    } catch {
+      setBookings(getStoredBookings());
+    }
     setContacts(getStoredContacts());
   };
 
@@ -149,18 +157,18 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
   };
 
   // Status Update Handler
-  const handleStatusChange = (ref: string, newStatus: BookingRecord['status']) => {
-    const updated = updateStoredBookingStatus(ref, newStatus);
+  const handleStatusChange = async (ref: string, newStatus: BookingRecord['status']) => {
+    const updated = await updateAdminReservationStatus(ref, newStatus);
     setBookings(updated);
     showToast(`Reservation ${ref} marked as ${newStatus}`, 'success');
   };
 
   // Delete Booking Handler
-  const handleDeleteBooking = (ref: string) => {
+  const handleDeleteBooking = async (ref: string) => {
     if (window.confirm(`Are you sure you want to remove reservation ${ref}?`)) {
-      const updated = deleteStoredBooking(ref);
+      const updated = await deleteAdminReservation(ref);
       setBookings(updated);
-      showToast(`Reservation ${ref} removed`, 'info');
+      showToast(`Reservation ${ref} removed.`, 'info');
     }
   };
 

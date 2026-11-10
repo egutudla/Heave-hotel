@@ -448,6 +448,43 @@ export const AdminPortalDashboard: React.FC<AdminPortalDashboardProps> = ({ onLo
     }
   };
 
+  const handlePullFromSheet = async () => {
+    setLoadingReservations(true);
+    const targetUrl = appsScriptUrlInput.trim() || APPS_SCRIPT_URL;
+    try {
+      const res = await fetch(`${targetUrl}?action=bookings`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.reservations) && data.reservations.length > 0) {
+          localStorage.setItem('havenstay_mock_bookings', JSON.stringify(data.reservations));
+          setReservations(data.reservations);
+          showToast(`Retrieved ${data.reservations.length} reservations from Google Sheet!`, 'success');
+          return;
+        }
+      }
+      showToast('To stream Google Sheet rows directly into Netlify, copy and deploy the updated Apps Script code.', 'info');
+      setShowCodeModal(true);
+    } catch (err: any) {
+      showToast(`Connection error: ${err.message}`, 'error');
+    } finally {
+      setLoadingReservations(false);
+    }
+  };
+
+  const handleConfirmAllPending = async () => {
+    const pendingList = reservations.filter((r) => r.status === 'Pending');
+    if (pendingList.length === 0) {
+      showToast('No pending reservations to confirm', 'info');
+      return;
+    }
+    for (const r of pendingList) {
+      await updateAdminReservationStatus(r.bookingRef || r.id, 'Confirmed');
+    }
+    const updated = await fetchAdminReservations();
+    setReservations(updated);
+    showToast(`Confirmed ${pendingList.length} pending reservations!`, 'success');
+  };
+
   const handleCopyCodeGs = () => {
     try {
       navigator.clipboard.writeText(CODE_GS_CONTENT);
@@ -954,7 +991,26 @@ export const AdminPortalDashboard: React.FC<AdminPortalDashboardProps> = ({ onLo
                     Filter, search, confirm, or modify hotel suite bookings.
                   </p>
                 </div>
-                <div className="flex items-center gap-2.5">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <button
+                    onClick={handlePullFromSheet}
+                    disabled={loadingReservations}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25 text-xs font-medium cursor-pointer transition-colors"
+                    title="Pull real-time bookings from Google Spreadsheet"
+                  >
+                    <FileSpreadsheet className={`w-3.5 h-3.5 ${loadingReservations ? 'animate-spin' : ''}`} />
+                    <span>Pull from Sheet</span>
+                  </button>
+                  {stats.pending > 0 && (
+                    <button
+                      onClick={handleConfirmAllPending}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#D5AD72]/20 border border-[#D5AD72]/40 text-[#E4C38E] hover:bg-[#D5AD72]/30 text-xs font-medium cursor-pointer transition-colors"
+                      title="Confirm all pending bookings at once"
+                    >
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Confirm All ({stats.pending})</span>
+                    </button>
+                  )}
                   <Button
                     variant="gold"
                     size="sm"
@@ -972,6 +1028,22 @@ export const AdminPortalDashboard: React.FC<AdminPortalDashboardProps> = ({ onLo
                     Export CSV
                   </Button>
                 </div>
+              </div>
+
+              {/* Status and Google Sheets Notice Banner */}
+              <div className="p-3.5 rounded-xl bg-white/5 border border-[#D5AD72]/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-white/80">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                  <span>
+                    New reservations arrive as <strong>"Pending"</strong> until confirmed. Click <strong>Pull from Sheet</strong> to sync your Google Sheet rows, or use <strong>(✓)</strong> on any reservation to confirm it.
+                  </span>
+                </div>
+                <button
+                  onClick={() => setShowCodeModal(true)}
+                  className="text-xs text-[#D5AD72] hover:underline font-medium shrink-0 cursor-pointer"
+                >
+                  Apps Script Setup
+                </button>
               </div>
 
               {/* Filter & Search Bar */}

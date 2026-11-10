@@ -12,6 +12,7 @@ interface DatePickerFieldProps {
   error?: string;
   helperText?: string;
   className?: string;
+  placeholder?: string;
   displayText?: string;
 }
 
@@ -89,6 +90,7 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
   error,
   helperText,
   className = '',
+  placeholder = 'Dates',
   displayText,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -204,7 +206,11 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
     );
   };
 
-  const formattedDisplay = value ? formatHumanDate(value) : 'Select date';
+  // When a date is selected, display what the user chose.
+  // Otherwise, display placeholder (defaults to 'Dates')
+  const displayLabel = value
+    ? (displayText || formatHumanDate(value))
+    : (placeholder || displayText || 'Dates');
 
   return (
     <div ref={containerRef} className={`relative flex flex-col space-y-1.5 ${className}`}>
@@ -236,8 +242,12 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
         <div className="flex items-center gap-2.5 min-w-0 pr-2">
           <CalendarIcon className="w-4 h-4 text-[#B88E52] shrink-0" />
           <div className="flex flex-col truncate">
-            <span className={`text-xs sm:text-sm font-medium truncate ${value || displayText ? 'text-[#142D26]' : 'text-stone-400'}`}>
-              {displayText || formattedDisplay}
+            <span
+              className={`text-xs sm:text-sm font-medium truncate ${
+                value ? 'text-[#142D26]' : 'text-[#242424]/70'
+              }`}
+            >
+              {displayLabel}
             </span>
           </div>
         </div>
@@ -328,7 +338,20 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
 
           {/* Footer note */}
           <div className="flex items-center justify-between pt-3 mt-2 border-t border-[#F7F5F0] text-[11px] text-stone-500">
-            <span>Click any date to apply</span>
+            {value ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onChange('');
+                  setIsOpen(false);
+                }}
+                className="text-stone-500 hover:text-red-700 font-medium cursor-pointer transition-colors"
+              >
+                Clear Date
+              </button>
+            ) : (
+              <span>Click any date to apply</span>
+            )}
             <button
               type="button"
               onClick={() => setIsOpen(false)}

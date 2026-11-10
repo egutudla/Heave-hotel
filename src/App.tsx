@@ -120,9 +120,9 @@ function CustomerWebsiteApp() {
   dayAfter.setDate(dayAfter.getDate() + 3);
 
   const [searchParams, setSearchParams] = useState<SearchParams>({
-    checkIn: tomorrow.toISOString().split('T')[0],
-    checkOut: dayAfter.toISOString().split('T')[0],
-    adults: 2,
+    checkIn: '',
+    checkOut: '',
+    adults: 1,
     children: 0,
     roomsCount: 1,
   });
@@ -377,7 +377,20 @@ function CustomerWebsiteApp() {
 
       <BookingModal
         isOpen={bookingModalOpen}
-        onClose={() => setBookingModalOpen(false)}
+        onClose={() => {
+          setBookingModalOpen(false);
+          setSelectedRoomForBooking(null);
+        }}
+        onBookingSuccess={() => {
+          // Reset search and selection state to clean defaults after booking
+          setSearchParams({
+            checkIn: '',
+            checkOut: '',
+            adults: 1,
+            children: 0,
+            roomsCount: 1,
+          });
+        }}
         selectedRoom={selectedRoomForBooking}
         allRooms={rooms}
         searchParams={searchParams}

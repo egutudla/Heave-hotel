@@ -264,7 +264,25 @@ app.post('/api/admin/logout', (req, res) => {
 // ==========================================
 
 // GET /api/admin/reservations
-app.get('/api/admin/reservations', requireAdminAuth, (req, res) => {
+app.get('/api/admin/reservations', requireAdminAuth, async (req, res) => {
+  const scriptUrl = process.env.VITE_API_URL || 'https://script.google.com/macros/s/AKfycbzqG6y5pbnm59u-7j0FGZX35rezq_nhmxEECXVAhYLNxNEILaar_VZfJgdUX-YN5SDa/exec';
+  if (scriptUrl) {
+    try {
+      const scriptRes = await fetch(`${scriptUrl}?action=bookings`);
+      if (scriptRes.ok) {
+        const scriptData: any = await scriptRes.json();
+        if (scriptData && Array.isArray(scriptData.reservations) && scriptData.reservations.length > 0) {
+          const existingRefs = new Set(reservationsStore.map((r) => r.bookingRef));
+          for (const item of scriptData.reservations) {
+            if (!existingRefs.has(item.bookingRef)) {
+              reservationsStore.unshift(item);
+              existingRefs.add(item.bookingRef);
+            }
+          }
+        }
+      }
+    } catch {}
+  }
   return res.json({
     success: true,
     reservations: reservationsStore,
@@ -287,6 +305,12 @@ app.patch('/api/admin/reservations/:id', requireAdminAuth, (req, res) => {
   }
 
   booking.status = status as any;
+
+  // Relay status update directly to Google Apps Script / Google Sheet
+  const scriptUrl = process.env.VITE_API_URL || 'https://script.google.com/macros/s/AKfycbzqG6y5pbnm59u-7j0FGZX35rezq_nhmxEECXVAhYLNxNEILaar_VZfJgdUX-YN5SDa/exec';
+  if (scriptUrl) {
+    fetch(`${scriptUrl}?action=update_status&bookingRef=${encodeURIComponent(booking.bookingRef)}&status=${encodeURIComponent(status)}`).catch(() => {});
+  }
 
   return res.json({
     success: true,

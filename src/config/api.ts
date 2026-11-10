@@ -531,31 +531,55 @@ export function deleteStoredBooking(refOrId: string): BookingRecord[] {
  */
 export async function fetchAdminReservations(): Promise<BookingRecord[]> {
   const token = sessionStorage.getItem('havenstay_management_token') || localStorage.getItem('havenstay_management_token');
+  const customScriptUrl = localStorage.getItem('havenstay_custom_apps_script_url') || APPS_SCRIPT_URL;
+
+  // 1. Try server-side admin API first (when running on full-stack dev/production server)
   try {
     const res = await fetch('/api/admin/reservations', {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
-    if (res.ok) {
+    const contentType = res.headers.get('content-type') || '';
+    if (res.ok && contentType.includes('application/json')) {
       const data = await res.json();
-      if (Array.isArray(data.reservations)) {
+      if (Array.isArray(data.reservations) && data.reservations.length > 0) {
         localStorage.setItem('havenstay_mock_bookings', JSON.stringify(data.reservations));
         return data.reservations;
       }
     }
   } catch (err) {
-    console.warn('HavenStay API: Error fetching server reservations, using cached store:', err);
+    console.warn('HavenStay API: Server endpoint not reachable, checking Google Apps Script:', err);
   }
+
+  // 2. Fetch directly from Google Apps Script Web App (WORKS ON NETLIFY & ANY HOST!)
+  if (customScriptUrl) {
+    try {
+      const scriptRes = await fetch(`${customScriptUrl}?action=bookings`);
+      if (scriptRes.ok) {
+        const scriptData = await scriptRes.json();
+        if (scriptData && Array.isArray(scriptData.reservations) && scriptData.reservations.length > 0) {
+          localStorage.setItem('havenstay_mock_bookings', JSON.stringify(scriptData.reservations));
+          return scriptData.reservations;
+        }
+      }
+    } catch (scriptErr) {
+      console.warn('HavenStay API: Google Apps Script bookings fetch error:', scriptErr);
+    }
+  }
+
   return getStoredBookings();
 }
 
 /**
- * Update reservation status on server /api/admin/reservations/:id
+ * Update reservation status on server and sync directly with Google Sheet
  */
 export async function updateAdminReservationStatus(
   refOrId: string,
   newStatus: BookingRecord['status']
 ): Promise<BookingRecord[]> {
   const token = sessionStorage.getItem('havenstay_management_token') || localStorage.getItem('havenstay_management_token');
+  const customScriptUrl = localStorage.getItem('havenstay_custom_apps_script_url') || APPS_SCRIPT_URL;
+
+  // 1. Send update to server API if available
   try {
     await fetch(`/api/admin/reservations/${encodeURIComponent(refOrId)}`, {
       method: 'PATCH',
@@ -566,24 +590,45 @@ export async function updateAdminReservationStatus(
       body: JSON.stringify({ status: newStatus }),
     });
   } catch (err) {
-    console.warn('HavenStay API: Server update failed, applying local mirror update:', err);
+    console.warn('HavenStay API: Server update failed:', err);
   }
+
+  // 2. Sync status update directly with Google Sheets via Apps Script Web App
+  if (customScriptUrl) {
+    try {
+      fetch(`${customScriptUrl}?action=update_status&bookingRef=${encodeURIComponent(refOrId)}&status=${encodeURIComponent(newStatus)}`, {
+        mode: 'no-cors'
+      }).catch(() => {});
+    } catch {}
+  }
+
   return updateStoredBookingStatus(refOrId, newStatus);
 }
 
 /**
- * Delete reservation on server /api/admin/reservations/:id
+ * Delete reservation on server and sync with Google Sheet
  */
 export async function deleteAdminReservation(refOrId: string): Promise<BookingRecord[]> {
   const token = sessionStorage.getItem('havenstay_management_token') || localStorage.getItem('havenstay_management_token');
+  const customScriptUrl = localStorage.getItem('havenstay_custom_apps_script_url') || APPS_SCRIPT_URL;
+
   try {
     await fetch(`/api/admin/reservations/${encodeURIComponent(refOrId)}`, {
       method: 'DELETE',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
   } catch (err) {
-    console.warn('HavenStay API: Server delete failed, applying local delete:', err);
+    console.warn('HavenStay API: Server delete failed:', err);
   }
+
+  if (customScriptUrl) {
+    try {
+      fetch(`${customScriptUrl}?action=delete_booking&bookingRef=${encodeURIComponent(refOrId)}`, {
+        mode: 'no-cors'
+      }).catch(() => {});
+    } catch {}
+  }
+
   return deleteStoredBooking(refOrId);
 }
 

@@ -159,13 +159,6 @@ export const RoomsPage: React.FC<RoomsPageProps> = ({
     }
   }, [maxPriceBound]);
 
-  // Sync capacity filter from search bar if adults parameter is set
-  useEffect(() => {
-    if (searchParams.adults && searchParams.adults > 1 && capacityFilter === 0) {
-      setCapacityFilter(searchParams.adults >= 4 ? 4 : searchParams.adults);
-    }
-  }, [searchParams.adults]);
-
   // Toggle single amenity
   const toggleAmenity = (amenity: string) => {
     setSelectedAmenities((prev) =>
@@ -186,6 +179,13 @@ export const RoomsPage: React.FC<RoomsPageProps> = ({
     setCapacityFilter(0);
     setSelectedAmenities([]);
     setSortBy('default');
+    onSearchChange({
+      checkIn: '',
+      checkOut: '',
+      adults: 1,
+      children: 0,
+      roomsCount: 1,
+    });
   };
 
   // Dynamic Filtering Logic (AND-based, reactive, high-performance)
@@ -274,7 +274,10 @@ export const RoomsPage: React.FC<RoomsPageProps> = ({
       list.push({
         id: 'capacity',
         label: `${capacityFilter}${capacityFilter >= 4 ? '+' : ''} Guests`,
-        onRemove: () => setCapacityFilter(0),
+        onRemove: () => {
+          setCapacityFilter(0);
+          onSearchChange({ ...searchParams, adults: 1 });
+        },
       });
     }
 

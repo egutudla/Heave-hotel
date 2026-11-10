@@ -58,9 +58,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [roomId, setRoomId] = useState<string>(selectedRoom?.RoomID || allRooms[0]?.RoomID || '');
   const [checkIn, setCheckIn] = useState<string>(defaultCheckIn);
   const [checkOut, setCheckOut] = useState<string>(defaultCheckOut);
-  const [roomsCount, setRoomsCount] = useState<number>(searchParams?.roomsCount || 1);
-  const [adults, setAdults] = useState<number>(searchParams?.adults || 2);
-  const [children, setChildren] = useState<number>(searchParams?.children || 0);
+  const [roomsCount, setRoomsCount] = useState<number>(1);
+  const [adults, setAdults] = useState<number>(1);
+  const [children, setChildren] = useState<number>(0);
   const [fullName, setFullName] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
@@ -82,14 +82,45 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     }
   }, [selectedRoom, allRooms]);
 
-  // Sync searchParams if provided
+  // Reset form and confirmation state when modal opens or closes
   useEffect(() => {
-    if (searchParams?.checkIn) setCheckIn(searchParams.checkIn);
-    if (searchParams?.checkOut) setCheckOut(searchParams.checkOut);
-    if (searchParams?.adults) setAdults(searchParams.adults);
-    if (searchParams?.children !== undefined) setChildren(searchParams.children);
-    if (searchParams?.roomsCount) setRoomsCount(searchParams.roomsCount);
-  }, [searchParams]);
+    if (!isOpen) {
+      setConfirmedResult(null);
+      setErrorMessage('');
+      setLoading(false);
+      setShowRateDetails(false);
+      setFullName('');
+      setEmail('');
+      setPhone('');
+      setRequests('');
+    } else {
+      setConfirmedResult(null);
+      setErrorMessage('');
+      setLoading(false);
+      setShowRateDetails(false);
+      setFullName('');
+      setEmail('');
+      setPhone('');
+      setRequests('');
+      if (searchParams?.checkIn) {
+        setCheckIn(searchParams.checkIn);
+      } else {
+        const d = new Date();
+        d.setDate(d.getDate() + 1);
+        setCheckIn(d.toISOString().split('T')[0]);
+      }
+      if (searchParams?.checkOut) {
+        setCheckOut(searchParams.checkOut);
+      } else {
+        const d = new Date();
+        d.setDate(d.getDate() + 3);
+        setCheckOut(d.toISOString().split('T')[0]);
+      }
+      setRoomsCount(1);
+      setAdults(searchParams?.adults || 1);
+      setChildren(searchParams?.children || 0);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
