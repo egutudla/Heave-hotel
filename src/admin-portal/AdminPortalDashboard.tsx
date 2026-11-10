@@ -771,10 +771,24 @@ export const AdminPortalDashboard: React.FC<AdminPortalDashboardProps> = ({ onLo
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Primary Pull from Sheet Button (Visible Everywhere) */}
+            <button
+              onClick={handlePullFromSheet}
+              disabled={loadingReservations}
+              title="Pull all live bookings directly from Google Sheet"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300 font-semibold text-xs transition-colors cursor-pointer shadow-sm"
+            >
+              <FileSpreadsheet className={`w-3.5 h-3.5 ${loadingReservations ? 'animate-spin' : ''}`} />
+              <span>{loadingReservations ? 'Pulling...' : 'Pull from Sheet'}</span>
+            </button>
+
             {/* Quick Refresh Button */}
             <button
-              onClick={loadReservationsData}
+              onClick={() => {
+                loadReservationsData();
+                handlePullFromSheet();
+              }}
               disabled={loadingReservations}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:border-[#D5AD72]/50 text-white/80 hover:text-white text-xs transition-colors cursor-pointer"
             >
@@ -789,8 +803,8 @@ export const AdminPortalDashboard: React.FC<AdminPortalDashboardProps> = ({ onLo
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:border-emerald-500/50 text-emerald-400 text-xs transition-colors"
             >
-              <FileSpreadsheet className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">Google Spreadsheet</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Open Sheet</span>
             </a>
 
             {/* Quick Sync to Sheet Button */}
@@ -798,10 +812,10 @@ export const AdminPortalDashboard: React.FC<AdminPortalDashboardProps> = ({ onLo
               onClick={handleSyncAllToSheet}
               disabled={isSyncingSheet}
               title="Push all reservations to Google Sheet"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25 text-emerald-300 text-xs font-medium transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:border-[#D5AD72]/40 text-white/70 hover:text-white text-xs transition-colors cursor-pointer"
             >
               <Download className={`w-3.5 h-3.5 ${isSyncingSheet ? 'animate-bounce' : ''}`} />
-              <span className="hidden lg:inline">{isSyncingSheet ? 'Syncing...' : 'Sync to Sheet'}</span>
+              <span className="hidden xl:inline">{isSyncingSheet ? 'Pushing...' : 'Push to Sheet'}</span>
             </button>
 
             {/* Logout on Top Bar */}
@@ -835,7 +849,15 @@ export const AdminPortalDashboard: React.FC<AdminPortalDashboardProps> = ({ onLo
                     Real-time performance metrics and guest reservation pipeline for HavenStay Hotels.
                   </p>
                 </div>
-                <div className="flex items-center gap-2.5">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <button
+                    onClick={handlePullFromSheet}
+                    disabled={loadingReservations}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30 text-xs font-semibold cursor-pointer transition-colors shadow-sm"
+                  >
+                    <FileSpreadsheet className={`w-3.5 h-3.5 ${loadingReservations ? 'animate-spin' : ''}`} />
+                    <span>{loadingReservations ? 'Pulling Bookings...' : 'Pull from Sheet'}</span>
+                  </button>
                   <Button
                     variant="gold"
                     size="sm"
@@ -909,14 +931,28 @@ export const AdminPortalDashboard: React.FC<AdminPortalDashboardProps> = ({ onLo
 
               {/* Recent Reservations Feed */}
               <div className="p-6 rounded-2xl bg-[#141A18] border border-white/5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-serif font-bold text-white text-base">Recent Guest Bookings</h3>
-                  <button
-                    onClick={() => setActiveSection('reservations')}
-                    className="text-xs text-[#D5AD72] hover:underline cursor-pointer"
-                  >
-                    View All Reservations →
-                  </button>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <h3 className="font-serif font-bold text-white text-base">Recent Guest Bookings</h3>
+                    <span className="text-[11px] text-white/50 font-mono">({reservations.length} records)</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      onClick={handlePullFromSheet}
+                      disabled={loadingReservations}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25 text-xs font-medium cursor-pointer transition-colors"
+                      title="Fetch live records from Google Sheet"
+                    >
+                      <FileSpreadsheet className={`w-3.5 h-3.5 ${loadingReservations ? 'animate-spin' : ''}`} />
+                      <span>Pull from Sheet</span>
+                    </button>
+                    <button
+                      onClick={() => setActiveSection('reservations')}
+                      className="text-xs text-[#D5AD72] hover:underline cursor-pointer font-medium"
+                    >
+                      View All Reservations →
+                    </button>
+                  </div>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -2165,6 +2201,130 @@ export const AdminPortalDashboard: React.FC<AdminPortalDashboardProps> = ({ onLo
                   </Button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* GOOGLE APPS SCRIPT SETUP MODAL */}
+      <AnimatePresence>
+        {showCodeModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowCodeModal(false)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm cursor-pointer"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-2xl bg-[#141A18] border border-[#D5AD72]/40 rounded-2xl p-6 sm:p-8 shadow-2xl z-10 space-y-5 max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                    <FileSpreadsheet className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-serif font-bold text-white text-lg">
+                      Sync Google Sheet with Admin Dashboard
+                    </h3>
+                    <p className="text-xs text-white/60">
+                      Your 21 bookings are saved in your Google Sheet. Follow these 4 quick steps to stream them into Netlify:
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowCodeModal(false)}
+                  className="p-1 rounded-full text-white/50 hover:text-white cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Step by Step Guide */}
+              <div className="space-y-3.5 text-xs text-white/80">
+                <div className="p-3.5 rounded-xl bg-black/40 border border-white/5 flex items-start gap-3">
+                  <span className="w-6 h-6 rounded-full bg-[#D5AD72] text-[#121615] font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                    1
+                  </span>
+                  <div className="flex-1">
+                    <span className="font-semibold text-white block">Open your Google Sheet</span>
+                    <p className="text-[11px] text-white/60 mt-0.5">
+                      Open your target spreadsheet ID: <code className="text-[#D5AD72]">1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqpIHM</code>
+                    </p>
+                    <a
+                      href="https://docs.google.com/spreadsheets/d/1fkhddEQzQgAXfwWV8Sw9ypnYvF0osErU8NMhaXqpIHM/edit"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-emerald-400 hover:underline font-medium text-[11px] mt-1.5"
+                    >
+                      <span>Open Spreadsheet in New Tab</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-black/40 border border-white/5 flex items-start gap-3">
+                  <span className="w-6 h-6 rounded-full bg-[#D5AD72] text-[#121615] font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                    2
+                  </span>
+                  <div>
+                    <span className="font-semibold text-white block">Open Apps Script Editor</span>
+                    <p className="text-[11px] text-white/60 mt-0.5">
+                      In the Google Sheets top menu bar, click <strong className="text-white">Extensions</strong> → <strong className="text-white">Apps Script</strong>.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-black/40 border border-white/5 flex items-start gap-3">
+                  <span className="w-6 h-6 rounded-full bg-[#D5AD72] text-[#121615] font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                    3
+                  </span>
+                  <div className="flex-1 space-y-2">
+                    <span className="font-semibold text-white block">Replace code with updated script</span>
+                    <p className="text-[11px] text-white/60">
+                      In the editor, select all existing text, delete it, and paste this updated script. Then click the <strong className="text-white">Save</strong> (💾) icon.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleCopyCodeGs}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30 font-semibold text-xs transition-colors cursor-pointer"
+                    >
+                      {copiedScript ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                      <span>{copiedScript ? 'Code.gs Copied to Clipboard!' : 'Copy Code.gs Script'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-black/40 border border-white/5 flex items-start gap-3">
+                  <span className="w-6 h-6 rounded-full bg-[#D5AD72] text-[#121615] font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                    4
+                  </span>
+                  <div>
+                    <span className="font-semibold text-white block">Deploy New Version</span>
+                    <p className="text-[11px] text-white/60 mt-0.5 leading-relaxed">
+                      Click the blue <strong className="text-white">Deploy</strong> button (top right) → <strong className="text-white">Manage deployments</strong> → click the <strong className="text-white">Pencil (Edit)</strong> icon → choose <strong className="text-white">Version: "New version"</strong> → click <strong className="text-white">Deploy</strong>.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-3 border-t border-white/10">
+                <span className="text-[11px] text-white/50">
+                  After deploying, click <strong>"Pull from Sheet"</strong> to load all 21 bookings.
+                </span>
+                <Button
+                  variant="gold"
+                  size="sm"
+                  onClick={() => setShowCodeModal(false)}
+                >
+                  Done
+                </Button>
+              </div>
             </motion.div>
           </div>
         )}
