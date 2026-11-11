@@ -527,13 +527,29 @@ export function deleteStoredBooking(refOrId: string): BookingRecord[] {
 }
 
 /**
- * Fetch all reservations from server-side admin endpoint /api/admin/reservations
+ * Fetch all reservations from Google Sheet via Apps Script or server endpoint
  */
 export async function fetchAdminReservations(): Promise<BookingRecord[]> {
   const token = sessionStorage.getItem('havenstay_management_token') || localStorage.getItem('havenstay_management_token');
   const customScriptUrl = localStorage.getItem('havenstay_custom_apps_script_url') || APPS_SCRIPT_URL;
 
-  // 1. Try server-side admin API first (when running on full-stack dev/production server)
+  // 1. Fetch directly from Google Apps Script Web App FIRST (Direct Google Sheet Live Data)
+  if (customScriptUrl) {
+    try {
+      const scriptRes = await fetch(`${customScriptUrl}?action=bookings`);
+      if (scriptRes.ok) {
+        const scriptData = await scriptRes.json();
+        if (scriptData && Array.isArray(scriptData.reservations) && scriptData.reservations.length > 0) {
+          localStorage.setItem('havenstay_mock_bookings', JSON.stringify(scriptData.reservations));
+          return scriptData.reservations;
+        }
+      }
+    } catch (scriptErr) {
+      console.warn('HavenStay API: Google Apps Script bookings fetch error:', scriptErr);
+    }
+  }
+
+  // 2. Fall back to server/Netlify admin API
   try {
     const res = await fetch('/api/admin/reservations', {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -548,22 +564,6 @@ export async function fetchAdminReservations(): Promise<BookingRecord[]> {
     }
   } catch (err) {
     console.warn('HavenStay API: Server endpoint not reachable, checking Google Apps Script:', err);
-  }
-
-  // 2. Fetch directly from Google Apps Script Web App (WORKS ON NETLIFY & ANY HOST!)
-  if (customScriptUrl) {
-    try {
-      const scriptRes = await fetch(`${customScriptUrl}?action=bookings`);
-      if (scriptRes.ok) {
-        const scriptData = await scriptRes.json();
-        if (scriptData && Array.isArray(scriptData.reservations) && scriptData.reservations.length > 0) {
-          localStorage.setItem('havenstay_mock_bookings', JSON.stringify(scriptData.reservations));
-          return scriptData.reservations;
-        }
-      }
-    } catch (scriptErr) {
-      console.warn('HavenStay API: Google Apps Script bookings fetch error:', scriptErr);
-    }
   }
 
   return getStoredBookings();

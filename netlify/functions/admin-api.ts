@@ -168,6 +168,27 @@ export const handler = async (event: HandlerEvent, context?: any): Promise<Handl
 
   // 3. Admin Reservations List
   if (path.endsWith('/reservations') && method === 'GET') {
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzqG6y5pbnm59u-7j0FGZX35rezq_nhmxEECXVAhYLNxNEILaar_VZfJgdUX-YN5SDa/exec';
+    try {
+      const scriptRes = await fetch(`${APPS_SCRIPT_URL}?action=bookings`);
+      if (scriptRes.ok) {
+        const scriptData: any = await scriptRes.json();
+        if (scriptData && Array.isArray(scriptData.reservations) && scriptData.reservations.length > 0) {
+          // Merge with memory bookings
+          const existingRefs = new Set(scriptData.reservations.map((r: any) => r.bookingRef || r.id));
+          const unpushed = memoryBookings.filter((b) => !existingRefs.has(b.bookingRef || b.id));
+          const combined = [...scriptData.reservations, ...unpushed];
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({ success: true, reservations: combined }),
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('Apps script fetch failed:', err);
+    }
+
     return {
       statusCode: 200,
       headers,
@@ -177,11 +198,23 @@ export const handler = async (event: HandlerEvent, context?: any): Promise<Handl
 
   // 4. Admin Stats
   if (path.endsWith('/stats') && method === 'GET') {
-    const total = memoryBookings.length;
-    const pending = memoryBookings.filter((b) => b.status === 'Pending').length;
-    const confirmed = memoryBookings.filter((b) => b.status === 'Confirmed').length;
-    const totalRevenue = memoryBookings
-      .filter((b) => b.status === 'Confirmed')
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzqG6y5pbnm59u-7j0FGZX35rezq_nhmxEECXVAhYLNxNEILaar_VZfJgdUX-YN5SDa/exec';
+    let currentBookings = memoryBookings;
+    try {
+      const scriptRes = await fetch(`${APPS_SCRIPT_URL}?action=bookings`);
+      if (scriptRes.ok) {
+        const scriptData: any = await scriptRes.json();
+        if (scriptData && Array.isArray(scriptData.reservations) && scriptData.reservations.length > 0) {
+          currentBookings = scriptData.reservations;
+        }
+      }
+    } catch {}
+
+    const total = currentBookings.length;
+    const pending = currentBookings.filter((b) => b.status === 'Pending').length;
+    const confirmed = currentBookings.filter((b) => b.status === 'Confirmed' || b.status === 'Checked-In' || b.status === 'Completed').length;
+    const totalRevenue = currentBookings
+      .filter((b) => b.status === 'Confirmed' || b.status === 'Checked-In' || b.status === 'Completed')
       .reduce((sum, b) => sum + (b.total || 0), 0);
 
     return {
